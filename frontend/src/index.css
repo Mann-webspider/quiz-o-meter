@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root{
+  --font: "Helvetica Now Display"
+}
+body {
+  margin: 0;
+  font-family: "helvetica now display";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
