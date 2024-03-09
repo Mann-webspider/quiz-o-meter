@@ -9,10 +9,9 @@ function App() {
   const navigate = useNavigate();
   async function fetchData() {
     const {
-      data: { session },
-      error,
+      data: { session }
     } = await supabase.auth.getSession();
-
+    console.log(session);
     setSession(() => session);
   }
   useEffect(() => {
@@ -22,10 +21,12 @@ function App() {
 
   const handleStudentBtn = ()=>{
     // navigate to student room join page
+    navigate("/join")
   }
   const handleTeacherBtn = ()=>{
     // first check that user has his session available or not 
     // if available then navigate him to his user Admin page
+    navigate("/teacher")
     // if not then navigate to login page
   }
   
@@ -59,8 +60,8 @@ function App() {
             <h1 className="text-6xl font-bold mb-8">Test Your Knowledge</h1>
             <p className="w-[50ch] text-lg text-center">Challenge Your Mind and Expand Your Knowledge with Engaging Quizzes!</p>
             <div className="choice flex  mt-24  justify-center gap-36">
-              <Button text={"Student"}/>
-              <Button text={"Teacher"}/>
+              <Button text={"Student"} click={handleStudentBtn}/>
+              <Button text={"Teacher"} click={handleTeacherBtn}/>
             </div>
           </div>
         </main>

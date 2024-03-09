@@ -5,7 +5,7 @@
     -webkit-text-stroke-color: #000;
     
     position: absolute;
-    top:2px;
-    left:2px;
+    top:3px;
+    left:0px;
     z-index: -5;
   }

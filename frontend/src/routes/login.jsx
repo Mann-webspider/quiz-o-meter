@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import "../styles/login.css";
 import Button from "../components/Button";
 import TextStroke from "../components/TextStroke";
@@ -22,7 +22,7 @@ function Login() {
       </div>
       <div className="container flex flex-col  items-center h-64">
         {/* <div className="box"></div> */}
-        <TextStroke text={"LOGIN"} size="5xl"/>
+        <TextStroke text={"LOGIN"} size="6xl"/>
         <div className="subHead w-[30ch] text-center text-gray-600 font-medium text-lg mb-20 mt-4">
           <p className="">
             Join in with us to Create and play the Quiz Challenges with

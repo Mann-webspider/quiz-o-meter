@@ -2,10 +2,10 @@ import React from 'react'
 import "./TextStroke.css"
 function TextStroke({text,size}) {
   return (
-    <div><div className="heading relative">
+    <div className='p-5 '><div className="heading relative w-full ">
           
-    <h1 className={`text-${size} font-bold z-5`}>{text}</h1>
-    <h1 className={`text-${size} font-bold text-white  stroke`}>{text}</h1>
+    <h2 className={`text-${size} font-bold z-5`}>{text}</h2>
+    <h2 className={`text-${size} font-bold text-white  stroke`}>{text}</h2>
   </div></div>
   )
 }

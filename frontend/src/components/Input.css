@@ -1,0 +1,9 @@
+.shelby{
+    height: 175px;
+    width:24rem;
+    background-color: black;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 10;
+}
