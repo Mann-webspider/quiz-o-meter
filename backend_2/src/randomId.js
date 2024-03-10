@@ -8,6 +8,4 @@ const randomId = ()=>{
     
     return id
 }
-
-
-export default randomId
+module.exports= randomId

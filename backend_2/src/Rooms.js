@@ -1,4 +1,6 @@
-import Quiz from "./Quiz"
+const Quiz = require("./Quiz");
+
+
 
 class Rooms{
     constructor(teacher,roomId){
@@ -6,6 +8,7 @@ class Rooms{
         this.teacher = teacher
         this.participants = []
         this.roomId = roomId
+        this.quizzes = []
     }
     getRoomId(){
         
@@ -26,8 +29,18 @@ class Rooms{
 
 
     addQuiz(ques,option,answer){
+        
         const newQuiz = new Quiz(ques,option,answer);
-        // this.quizzes.push(newQuiz);
+        this.quizzes.push(newQuiz);
+        
+        return "Question added"
+    }
+
+    addBulkRoomQuiz(listOfQuiz){
+        listOfQuiz.map((quiz)=>{
+            this.addQuiz(quiz.question,quiz.options,quiz.answer)
+    })
+    return "ok"
     }
 
     addStudent(username){
@@ -35,6 +48,28 @@ class Rooms{
         this.room.addParticipant(newStudent)
     }
 
+    getRoomQuiz(){
+        
+        return [...this.quizzes.map((quiz)=> quiz.getQuiz())]
+    }
+    
+    
+    
+    checkQuizAnswer(quizId,answerIndex){
+        
+        // it will return the quiz answer is true or false 
+        return this.quizzes.map((data)=> {
+
+    
+            console.log(data);
+        if(data.id == quizId){
+                 return data.checkAnswer(answerIndex)
+        }
+        return false
+        
+    })[0]
+    }
+
 }
 
-export default Rooms
+module.exports= Rooms

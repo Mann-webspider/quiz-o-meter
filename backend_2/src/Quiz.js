@@ -8,7 +8,8 @@ class Quiz{
     }
 
     getQuiz(){
-        return {question:this.question,
+        return {quizId:this.id,
+            question:this.question,
         options:this.options}
     }
 
@@ -24,3 +25,5 @@ class Quiz{
     }
     
 }
+
+module.exports = Quiz

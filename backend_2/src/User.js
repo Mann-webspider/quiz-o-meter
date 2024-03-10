@@ -2,7 +2,7 @@ const randomId = require("./randomId")
 
 class User{
     constructor(username ,role="student"){
-        this.id = randomId()
+        this._id = randomId()
         this.username = username;
     
         this.role = role
@@ -13,10 +13,10 @@ class User{
     }
 
     getUserId(){
-        return this.id
+        return this._id
     }
 
     
 }
 
-export default User
+module.exports= User

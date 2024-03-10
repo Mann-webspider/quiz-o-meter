@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router()
-
+// const {newManager} = require("./teacher")
+const newManager = require("../init")
 // Retrieve a list of rooms available for students to join.
 router.get("/student/rooms")
 
@@ -11,5 +12,11 @@ router.post("/rooms/:id/join")
 router.get("/rooms/:roomId/quizzes/:quizId")
 
 // Submit answers to questions in a quiz within a specific room.
-router.post("/rooms/:roomId/quizzes/:quizId/answers")
-export default router
+router.post("/rooms/quizzes/answers",(req,res)=>{
+    const cookie = req.cookies;
+    const body = req.body;
+    const result = newManager.checkManagerQuizAnswer(cookie.roomId,body.quizId,body.answer)
+    res.send(result)
+
+})
+module.exports=router
