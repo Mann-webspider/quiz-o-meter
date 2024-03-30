@@ -7,16 +7,16 @@ import Button from "./components/Button"
 function App() {
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
-  async function fetchData() {
-    const {
-      data: { session }
-    } = await supabase.auth.getSession();
-    console.log(session);
-    setSession(() => session);
-  }
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // async function fetchData() {
+  //   const {
+  //     data: { session }
+  //   } = await supabase.auth.getSession();
+  //   console.log(session);
+  //   setSession(() => session);
+  // }
+  // useEffect(() => {
+  //   fetchData();
+  // }, []);
 
 
   const handleStudentBtn = ()=>{
@@ -26,7 +26,7 @@ function App() {
   const handleTeacherBtn = ()=>{
     // first check that user has his session available or not 
     // if available then navigate him to his user Admin page
-    navigate("/teacher")
+    navigate("/create")
     // if not then navigate to login page
   }
   

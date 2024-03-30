@@ -2,13 +2,20 @@ import React from "react";
 import "../styles/login.css";
 import Button from "../components/Button";
 import TextStroke from "../components/TextStroke";
-import supabase from "../utils/supabase"
+// import supabase from "../utils/supabase"
+// import { useCookies } from 'react-cookie';
+// import { useNavigate } from "react-router-dom";
 
 function Login() {
-  
-  
+    // const navigate = useNavigate()
+    // const [cookie,setCookie,removeCookie] = useCookies()
     const handleSignInWithGoogle = async () =>{
-        await supabase.auth.signInWithOAuth({provider:'google'})
+      //  await supabase.auth.signInWithOAuth({provider:'google'}).then((session)=>{
+
+      //   setCookie("session",session,{maxAge:1000*60*10})
+      //   // navigate("/teacher")
+      // })
+      
         
     }
   return (

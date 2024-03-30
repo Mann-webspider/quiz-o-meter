@@ -1,16 +1,41 @@
 const express = require("express");
-const app = express();
-const teacher = require("./routes/teacher")
-const student = require("./routes/student");
-const cookieParser = require("cookie-parser");
-// const init = require("./init")
 
+const cookieParser = require("cookie-parser");
+// create express application 
+const app = express();
+// const init = require("./init")
+const cors = require("cors");
+// const { default: mongoose } = require("mongoose");
+const conn = require("./db/connect");
+
+// middlewares 
+app.use(cors({
+    origin: ["http://localhost:3000","http://localhost:3003"],
+    methods: ["GET", "POST"],
+    
+    credentials: true,
+}))
 app.use(express.json())
 app.use(cookieParser())
 
+// mongo db connection 
+// const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mydatabase';
+// mongoose.connect("mongodb://root:password@localhost:27017/",{ useNewUrlParser: true, useUnifiedTopology: true })
+// .then(() => console.log('MongoDB connected'))
+// .catch(err => console.error('MongoDB connection error:', err));
+
+
+// load routes 
+const teacher = require("./routes/teacher")
+const student = require("./routes/student");
+// use routes 
 app.use("/api/teachers",teacher)
-app.use("/api/student",student)
+app.use("/api/students",student)
+
 
 app.listen(3001,()=>{
     console.log("listening on port 3001");
 })
+
+
+module.exports = app

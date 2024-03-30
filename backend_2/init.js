@@ -1,4 +1,10 @@
+const IoManager = require("./ioManager")
 const QuizManager = require("./src/QuizManager")
 
-    const newManager = new QuizManager()
-module.exports=newManager
+
+var newManager;
+
+newManager = new QuizManager()
+
+const io = new IoManager().getIo()
+module.exports={newManager , io }

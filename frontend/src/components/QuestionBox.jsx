@@ -2,6 +2,7 @@ import React from 'react'
 import Button from './Button'
 
 function QuestionBox(props) {
+  
   return (
     <div className={`relative w-4/6 h-5/6 flex justify-center`}>
 
@@ -18,8 +19,8 @@ function QuestionBox(props) {
                     }
                    </ul>
                    <div className="room">
-                   <h2>RoomId: </h2>
-                    <Button text={"Submit"}/>
+                   <h2>RoomId: {props.roomId}</h2>
+                    <Button text={"Submit"} click={props.click}/>
                    </div>
         </div>
         <div className={`back w-full h-full rounded-2xl bg-black absolute z-[1] top-3 left-3`}>

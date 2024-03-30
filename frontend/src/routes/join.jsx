@@ -1,16 +1,32 @@
-import React, {  useState } from "react";
+import React, {  useEffect, useState } from "react";
 import TextStroke from "../components/TextStroke";
 import OtpInput from "../components/Otp";
 import Button from "../components/Button";
-
+import socket from "../utils/socket"
+import { useNavigate } from "react-router-dom";
 
 function Join() {
  
 
   const [form, setForm] = useState({username:"",roomId:""});
+  const [room,setRoom]= useState()
+  const navigation = useNavigate()
   const onSubmit = (e) => {
     
-    console.log(form)};
+    // console.log(form)
+    socket.emit("join_room",form)
+    
+  };
+  useEffect(()=>{
+    socket.on("joined-room",(sck)=>{
+      console.log(sck);
+      setRoom(sck)
+      navigation("/start")
+      // useNavigate("")
+  
+    })
+
+  },[room])
  
   
  

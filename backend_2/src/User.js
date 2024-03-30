@@ -1,8 +1,8 @@
-const randomId = require("./randomId")
+const randomId = require("../utils/randomId")
 
 class User{
-    constructor(username ,role="student"){
-        this._id = randomId()
+    constructor(username ,role="student",id=randomId()){
+        this._id = id
         this.username = username;
     
         this.role = role

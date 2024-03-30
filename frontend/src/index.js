@@ -10,6 +10,9 @@ import {
 import Login from './routes/login';
 import Join from './routes/join';
 import Teacher from './routes/Teacher';
+import CreateRoom from './routes/teacherRoom';
+import { CookiesProvider } from 'react-cookie';
+import Start from './routes/start';
 
 
 const router = createBrowserRouter([
@@ -28,13 +31,24 @@ const router = createBrowserRouter([
   {
     path:"/teacher",
     element: <Teacher/>
+  },
+  {
+    path:"/create",
+    element:<CreateRoom/>
+  },
+  {
+    path:"/start",
+    element:<Start/>
   }
 ]);
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
+  <CookiesProvider defaultSetOptions={{ path: '/' }}>
+
+  {/* <React.StrictMode> */}
      {/* <App /> */}
     <RouterProvider router={router} />
-  </React.StrictMode>
+  {/* </React.StrictMode> */}
+  </CookiesProvider>
 );
 

@@ -1,10 +1,11 @@
-const randomId = require("./randomId")
+const randomId = require("../utils/randomId")
 class Quiz{
-    constructor(question, options=[],answer){
-        this.id = randomId()
+    constructor(question, options,answer,id=randomId()){
+        this.id = id
         this.question = question
         this.options = options
         this.__answer = answer
+        
     }
 
     getQuiz(){
@@ -18,6 +19,10 @@ class Quiz{
     }
 
     checkAnswer(answerIndex){
+        if(this.type != "mcq"){
+            // write the logic for sending the answer to Ai answer checker 
+            return
+        }
         if (this.options[this.__answer] == this.options[answerIndex]){
             return true
         }
@@ -25,5 +30,7 @@ class Quiz{
     }
     
 }
+
+
 
 module.exports = Quiz
