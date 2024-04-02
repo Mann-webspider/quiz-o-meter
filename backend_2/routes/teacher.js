@@ -7,11 +7,11 @@ const { newManager } = require("../init");
 
 
 // Retrieve a list of quizzes created by the teacher.
-router.get("/quizzes",(req,res)=>{
+router.get("/quizzes",async (req,res)=>{
     const cookie = req.cookies;
     const body = req.body;
-    const result = newManager.getQuizzes(cookie.roomId)
-    res.send(result)
+    const result = await newManager.getTeacherQuizzes(cookie.roomId)
+    res.json(result)
 })
 
 // Retrieve details of a specific quiz created by the teacher.
@@ -19,12 +19,12 @@ router.get("/quizzes",(req,res)=>{
 
 // Create a new quiz.
 router.post("/quizzes",async (req,res)=>{
-    console.log(req.cookies);
+    
     const cookie = req.cookies;
     const body = req.body;
     
-    const result = await newManager.addBulkQuiz(cookie.roomId,body)
-    console.log(result);
+    const result = await newManager.addBulkQuiz(cookie.roomId,body.listOfQuiz)
+    
     res.json(result)
 })
 
@@ -37,28 +37,34 @@ router.post("/quizzes",async (req,res)=>{
 // Retrieve a list of rooms created by the teacher.
 // router.get("/rooms")
 
-// Retrieve details of a specific room created by the teacher.
-// router.get("/rooms/:id")
+
 
 // Create a new room./
 router.post("/rooms",async  (req,res)=>{
     console.log(req.body);
     const name = req.body.teacherName
     const roomId = req.body.roomId
-    // console.log(name, roomId);
     
-    // const newManager = new QuizManager()
     const result = newManager.createRoom(name,roomId)
-    newManager.saveToMongoDB()
-    res.json({"roomId":roomId,"userId":result})
+    
+    res.cookie("teacherId",result).json({"roomId":roomId,"teacherId":result})
 })
-router.get("/rooms",async (req,res)=>{
-    obj = await newManager.loadFromMongoDB()
+//Retrieve details of a specific room created by the teacher.
+router.get("/rooms/:roomId",async (req,res)=>{
+    const {roomId} = req.params
+    console.log(roomId);
+    const obj = await newManager.getRoom(roomId)
+    
     console.log(obj);
     res.send(obj)
 
 })
 
+router.get("/dummy/:roomId",async (req,res)=>{
+    const {roomId} = req.params;
+    const ob = await newManager.dummy(roomId)
+    res.json(ob)
+})
 // Update an existing room created by the teacher.
 // router.put("/rooms/:id")
 

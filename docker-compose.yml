@@ -1,40 +1,45 @@
 version: '3.9'
 
 services:
-  # react-app:
+  react-app:
     
-  #   build:
-  #     context: "./frontend/"
+    build:
+      context: "./frontend/"
       
-  #   volumes:
-  #     # This bind mount allows changes on the host file system to affect the container.
-  #     # Saving a code file can cause an incremental build, a hot reload in the browser,
-  #     # and a reconnection of the debugger.
-  #     # The mount is in delegated mode:
-  #     # Changes on the host, like saving a code file, immediately affect the container.
-  #     # Changes within the container, like build output, make their way back to the host,
-  #     # but are not strictly synchronized.
-  #     - ./frontend/:/usr/src/app
-  #   ports:
-  #     - 3000:3000
+    volumes:
+      # This bind mount allows changes on the host file system to affect the container.
+      # Saving a code file can cause an incremental build, a hot reload in the browser,
+      # and a reconnection of the debugger.
+      # The mount is in delegated mode:
+      # Changes on the host, like saving a code file, immediately affect the container.
+      # Changes within the container, like build output, make their way back to the host,
+      # but are not strictly synchronized.
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/frontend:/usr/src/app
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/node_modules
+    ports:
+      - 3000:3000
       
-  #   command: npm start
-  # server:
-  #   container_name: "server"
-  #   build:
-  #     context: "./backend_2/"
+    command: npm start 
+  server:
+    container_name: "server"
+    build:
+      context: "/home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/"
+      dockerfile: Dockerfile
+      
     
-  #   depends_on:
-  #     - mongo
-  #   volumes:
-  #     - ./backend_2/:/usr/src/app
-  #   ports:
-  #     - 3001:3001
+    depends_on:
+      - mongo
+    volumes:
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/:/usr/src/app
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/backend_2/node_modules
+    ports:
+      - 3001:3001
       
-  #   command: 
-  #     - npm
-  #     - run
-  #     - dev
+      
+    command: 
+      - npm
+      - run
+      - start
   
   # socket:
   #   build: 
@@ -51,7 +56,7 @@ services:
     image: mongo:latest
     restart: always
     ports:
-      - 27017:27017
+      - 27018:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password

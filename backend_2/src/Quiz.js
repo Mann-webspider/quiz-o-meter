@@ -1,15 +1,18 @@
 const randomId = require("../utils/randomId")
 class Quiz{
-    constructor(question, options,answer,id=randomId()){
-        this.id = id
+    constructor(question, options,answer,roomId,quizId=null){
+        
         this.question = question
         this.options = options
-        this.__answer = answer
-        
+        this.answer = answer
+        this.roomId = roomId
+        this.quizId = quizId
     }
 
     getQuiz(){
-        return {quizId:this.id,
+        
+        
+        return {quizId:this.quizId,
             question:this.question,
         options:this.options}
     }
@@ -19,11 +22,8 @@ class Quiz{
     }
 
     checkAnswer(answerIndex){
-        if(this.type != "mcq"){
-            // write the logic for sending the answer to Ai answer checker 
-            return
-        }
-        if (this.options[this.__answer] == this.options[answerIndex]){
+        
+        if (this.options[this.answer] == this.options[answerIndex]){
             return true
         }
         return false

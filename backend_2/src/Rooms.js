@@ -1,62 +1,97 @@
+const { QuizM, UserM, RoomM } = require("../db/model");
+const { storeQuizesFromUser, findById, storeQuizesFromDb } = require("../utils/storeQuiz");
 const Quiz = require("./Quiz");
+const User = require("./User");
 
 class Rooms {
-  constructor(teacher,roomId,quizzes=[],submissions=[],participants=[]) {
-    // this.roomDict = {};
+  constructor(
+    teacher,
+    roomId,
+    quizzes = [],
+    submissions = [],
+    participants = []
+  ) {
     this.teacher = teacher;
     this.participants = participants;
     this.roomId = roomId;
     this.quizzes = quizzes;
     this.submissions = submissions;
   }
-  getRoomId() {
-    return this.roomId;
+  
+
+  static async addParticipant(username) {
+    try {
+      const newUser = new User(username);
+      const dbUser = new UserM(newUser);
+      await dbUser.save();
+
+      return dbUser.id;
+    } catch (error) {
+      console.log(error);
+      return "student already exists";
+    }
   }
 
-  addParticipant(user) {
-    this.participants.push(user);
+  static async getParticipantName(objectId) {
+    const room = await RoomM.findOne({ _id: objectId }, { participants: 1 }).populate("participants");
+    
+    return room.participants
   }
 
-  getParticipantName() {
-    return this.participants;
-  }
   removeParticipant(user) {
     this.participants = [...this.participants.filter((us) => us != user)];
     0;
   }
 
-  addQuiz(ques, option, answer) {
-    const newQuiz = new Quiz(ques, option, answer);
-    this.quizzes.push(newQuiz);
+  // async addQuiz(ques, option, answer) {
+  //   const newQuiz = new Quiz(ques, option, answer);
 
-    return "Question added";
-  }
+  //   ls.push(newQuiz);
+  //   return "Question added";
+  // }
 
-  addBulkRoomQuiz(listOfQuiz) {
-    listOfQuiz.map((quiz) => {
-      this.addQuiz(quiz.question, quiz.options, quiz.answer);
-    });
-    return "ok";
-  }
+  static async addBulkRoomQuiz(listOfQuiz, roomId) {
+    try {
+      // Check if listOfQuiz is an array
 
-  addStudent(username) {
-    const newStudent = new User(username);
-    this.room.addParticipant(newStudent);
-  }
-
-  getRoomQuiz() {
-    return [...this.quizzes.map((quiz) => quiz.getQuiz())];
-  }
-
-  checkQuizAnswerAndSubmit(userId ,quizId, answerIndex) {
-    // it will return the quiz answer is true or false
-    const answer = this.quizzes.map((data) => {
-        if (data.id == quizId) {
-          return data.checkAnswer(answerIndex);
+      if (!Array.isArray(listOfQuiz)) {
+        throw new Error("listOfQuiz must be an array");
+      }
+      const dt = storeQuizesFromUser(listOfQuiz, roomId);
+      const res = await QuizM.insertMany(dt, { rawResult: true }).then(
+        (data) => {
+          return new Map(Object.entries(data.insertedIds));
         }
-        return false;
-      })[0];
-    return 
+      );
+
+      return res;
+    } catch (error) {
+      console.log("Error in Rooms add bulk: ", error._message);
+    }
+  }
+
+  
+
+  static getRoomQuiz(quizzes) {
+    return [...quizzes.map((quiz) => quiz.getQuiz())];
+  }
+
+  static async checkQuizAnswerAndSubmit(userId, quizzes,roomId) {
+    // it will return the quiz answer is true or false
+    const quizFromDb = await findById("quizes",roomId)
+    const listOfDbQuiz = storeQuizesFromDb(quizFromDb)
+    // console.log(listOfDbQuiz);
+    const dt = listOfDbQuiz.map( (quiz,idx)=>{
+      console.log(quizzes[idx]);
+      console.log(listOfDbQuiz[idx].quizId);
+      if(quiz.quizId == quizzes[idx].quizId){
+        console.log("found quiz");
+        return quiz.checkAnswer(quizzes[idx].answer)
+        
+      }
+      
+    })
+    return dt;
   }
 }
 

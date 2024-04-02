@@ -7,4 +7,4 @@ var newManager;
 newManager = new QuizManager()
 
 const io = new IoManager().getIo()
-module.exports={newManager , io }
+module.exports={newManager , io } 

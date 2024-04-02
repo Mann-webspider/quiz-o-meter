@@ -1,8 +1,8 @@
 const randomId = require("../utils/randomId")
 
 class User{
-    constructor(username ,role="student",id=randomId()){
-        this._id = id
+    constructor(username ,role="student",id=null){
+        this.id = id
         this.username = username;
     
         this.role = role
@@ -13,7 +13,7 @@ class User{
     }
 
     getUserId(){
-        return this._id
+        return this.id
     }
 
     

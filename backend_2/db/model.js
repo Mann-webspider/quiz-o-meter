@@ -1,4 +1,4 @@
-const { Schema, default: mongoose, SchemaType } = require("mongoose");
+const { Schema, default: mongoose } = require("mongoose");
 
 const UserSchema = new Schema(
   {
@@ -12,7 +12,7 @@ const UserSchema = new Schema(
 const QuizSchema = new Schema(
   {
     question: { type: String },
-    Option: { type: [String] },
+    options: [{ type: String }],
     answer: { type: String },
     roomId: { type: String, required: true },
   },
@@ -22,14 +22,14 @@ const QuizSchema = new Schema(
 const RoomSchema = new Schema(
   {
     teacher: { type: Schema.Types.ObjectId },
-    participants: { type: [UserSchema], default: [] },
+    participants: [{ type: Schema.Types.ObjectId, default: [] ,ref:"Users"}],
     roomId: { type: String, unique: true },
-    quizzes: { type: [QuizSchema], default: [] },
-  },
+    quizzes:  {type: Schema.Types.Map,of:Schema.Types.ObjectId , default: null ,ref:"Quizes"}},
   { timestamps: true }
 );
 const QuizManagerSchema = new mongoose.Schema({
-  roomsInstance: { type: Object, required: true },
+  roomId: {type:String},
+  roomObj:{type:Schema.Types.ObjectId, ref:"Rooms"}
 });
 const QuizManagerModel = mongoose.model("QuizManager", QuizManagerSchema);
 
