@@ -23,7 +23,7 @@ router.post("/quizzes",async (req,res)=>{
     const cookie = req.cookies;
     const body = req.body;
     
-    const result = await newManager.addBulkQuiz(cookie.roomId,body.listOfQuiz)
+    const result = await newManager.addBulkQuiz(cookie.roomId,body)
     
     res.json(result)
 })

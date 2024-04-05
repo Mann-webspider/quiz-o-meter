@@ -98,12 +98,6 @@ class QuizManager {
     return room.roomObj;
   }
 
-async dummy(roomId) {
-    const room =await QuizManagerModel.findOne({roomId})
-    const res= findById("rooms",room.roomObj)
-    //WIP
-    return room.roomObj;
-  }
 
   async checkManagerQuizAnswer(studentId, roomId, quizzes) {
     try {

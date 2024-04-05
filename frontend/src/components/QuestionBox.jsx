@@ -13,7 +13,7 @@ function QuestionBox(props) {
                     {
                       props.question.map((data,idx)=>(
                         <li key={idx} className='bg-white p-4 rounded-lg border-2 border-black my-4 text-lg font-medium tracking-wider'>
-                          {data.Question},            {data.options[data.answer]}
+                          {data.question},            {data.options[data.answer]}
                         </li>
                       ))
                     }

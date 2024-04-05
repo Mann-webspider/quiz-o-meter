@@ -18,6 +18,7 @@ router.post("/rooms/:roomId",async (req,res)=>{
 router.get("/rooms/:roomId",async (req,res)=>{
     const {roomId} = req.params
     const ques =await newManager.getQuizzes(roomId)
+    console.log(ques);
     res.json(ques)
 })
 

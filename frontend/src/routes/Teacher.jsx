@@ -66,7 +66,7 @@ const handleQuizSubmit = ()=>{
           <div className="form w-3/6 h-6/6 ">
             <form className="flex flex-col justify-around  w-full h-full " onSubmit={handleSubmit(onSubmit)}>
               <div className="">
-                <Input placeholder={"Enter your Question"} width={"96rem"}  register={{...register("Question")}}/>
+                <Input placeholder={"Enter your Question"} width={"96rem"}  register={{...register("question")}}/>
               </div>
               <div className="multiples ">
                 <Choices number={4} register={register} />

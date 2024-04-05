@@ -1,9 +1,11 @@
-import React, {  useEffect, useState } from "react";
+import React, {  useState } from "react";
 import TextStroke from "../components/TextStroke";
 import OtpInput from "../components/Otp";
 import Button from "../components/Button";
-import socket from "../utils/socket"
+// import socket from "../utils/socket"
 import { useNavigate } from "react-router-dom";
+import api from "../utils/axios";
+import { useCookies } from "react-cookie";
 
 function Join() {
  
@@ -11,22 +13,15 @@ function Join() {
   const [form, setForm] = useState({username:"",roomId:""});
   const [room,setRoom]= useState()
   const navigation = useNavigate()
-  const onSubmit = (e) => {
+  const [cookie,setCookie]= useCookies()
+  const onSubmit = async(e) => {
     
-    // console.log(form)
-    socket.emit("join_room",form)
-    
+    console.log(form)
+    const res = await api.post(`http://localhost:3001/api/students/rooms/${form.roomId}`)
+    setCookie("userId",res.data.userId)
+    navigation("/start")
   };
-  useEffect(()=>{
-    socket.on("joined-room",(sck)=>{
-      console.log(sck);
-      setRoom(sck)
-      navigation("/start")
-      // useNavigate("")
   
-    })
-
-  },[room])
  
   
  

@@ -18,11 +18,6 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
-// mongo db connection 
-// const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mydatabase';
-// mongoose.connect("mongodb://root:password@localhost:27017/",{ useNewUrlParser: true, useUnifiedTopology: true })
-// .then(() => console.log('MongoDB connected'))
-// .catch(err => console.error('MongoDB connection error:', err));
 
 
 // load routes 

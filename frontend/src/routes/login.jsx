@@ -7,17 +7,7 @@ import TextStroke from "../components/TextStroke";
 // import { useNavigate } from "react-router-dom";
 
 function Login() {
-    // const navigate = useNavigate()
-    // const [cookie,setCookie,removeCookie] = useCookies()
-    const handleSignInWithGoogle = async () =>{
-      //  await supabase.auth.signInWithOAuth({provider:'google'}).then((session)=>{
-
-      //   setCookie("session",session,{maxAge:1000*60*10})
-      //   // navigate("/teacher")
-      // })
-      
-        
-    }
+  
   return (
     <div className="w-full  h-[100vh] relative flex justify-center items-center">
       <div className="img w-full absolute z-[-10]">
@@ -37,7 +27,7 @@ function Login() {
           </p>
         </div>
         <div className="btn">
-          <Button text={"Sign in with Google"} click={handleSignInWithGoogle}/>
+          <Button text={"Sign in with Google"}/>
         </div>
       </div>
     </div>
