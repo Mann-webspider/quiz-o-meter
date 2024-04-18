@@ -1,13 +1,14 @@
 import React from 'react'
 import RadioButton from './RadioButton'
 
-function RadioGroup() {
+function RadioGroup({options,id,register}) {
   return (
-    <div>
-        <RadioButton text={"hello"} />
-        <RadioButton text={"hello"} />
-        <RadioButton text={"hello"} />
-        <RadioButton text={"hello"} />
+    <div className='w-full h-[500px] grid grid-cols-2 gap-9'>
+        {options.map((option,idx)=>(
+          <>            
+            <RadioButton text={option} id={`${id}`} key={id} idx={idx} register={{...register(`answers.${id}`)}}/>
+          </>
+        ))}
     </div>
   )
 }

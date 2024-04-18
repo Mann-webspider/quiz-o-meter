@@ -12,7 +12,7 @@ class QuizManager {
     try {
       // to create room first make instance of the Room Object And teacher User object
       // const teacher = new User(teacherName,"teacher")
-      const teacher = new UserM({ username: teacherName, role: "teacher" });
+      const teacher = new UserM({ username: teacherName,roomId, role: "teacher" });
       teacher.save();
 
       // const newRoom = new Rooms(teacher,roomId);
@@ -32,13 +32,18 @@ class QuizManager {
   }
 
   async addStudent(username, roomId) {
-    // this method will engage when from frontend students enter their name and room id
+    try{
+ // this method will engage when from frontend students enter their name and room id
     // create the student object
     // then find the room that student whats to join
     const roomIns =await findById("manager",roomId);
-    const userId = await Rooms.addParticipant(username);
+    const userId = await Rooms.addParticipant(username,roomId);
     await RoomM.findByIdAndUpdate({_id:roomIns.roomObj},{$push:{participants:userId}})
     return userId;
+    }catch{
+      return "No room Found , Or no room created "
+    }
+   
   }
 
   async getStudentName(roomId) {
@@ -102,15 +107,23 @@ class QuizManager {
   async checkManagerQuizAnswer(studentId, roomId, quizzes) {
     try {
       
-      const roomIns = this.getRoom(roomId);
+      
       const res = await Rooms.checkQuizAnswerAndSubmit(studentId,quizzes,roomId);
-      console.log(res);
-      return 
+      const dbRs = await UserM.findByIdAndUpdate(studentId,{submissions:res});
+      
+      return res
     } catch (error) {
       console.log(error);
       return 0;
     }
 
+  }
+
+  async getAnalytics(teacherId,roomId){
+    const roomIns = await RoomM.find({roomId}).populate("participants",["submissions"]);
+    // console.log(roomIns.);
+    const res = roomIns[0].participants[0].submissions
+    return res
   }
 }
 module.exports = QuizManager;

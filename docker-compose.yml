@@ -7,15 +7,9 @@ services:
       context: "./frontend/"
       
     volumes:
-      # This bind mount allows changes on the host file system to affect the container.
-      # Saving a code file can cause an incremental build, a hot reload in the browser,
-      # and a reconnection of the debugger.
-      # The mount is in delegated mode:
-      # Changes on the host, like saving a code file, immediately affect the container.
-      # Changes within the container, like build output, make their way back to the host,
-      # but are not strictly synchronized.
+      
       - /home/shelby/workspace/nodeJs/quiz-o-meter/frontend:/usr/src/app
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/node_modules
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/frontend/node_modules
     ports:
       - 3000:3000
       
@@ -26,12 +20,14 @@ services:
       context: "/home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/"
       dockerfile: Dockerfile
       
-    
-    depends_on:
-      - mongo
+    networks:
+      - mongors-network
+    # depends_on:
+    #   - mongo-rs0-1
+      
     volumes:
       - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/:/usr/src/app
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/backend_2/node_modules
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/node_modules
     ports:
       - 3001:3001
       
@@ -41,25 +37,95 @@ services:
       - run
       - start
   
-  # socket:
-  #   build: 
-  #     context: "./socket_server/"
-  #   depends_on:
-  #     - mongo
-  #   volumes:
-  #     - ./socket_server/:/usr/src/app
-  #   ports:
-  #     - 3003:3003
-  #   command: node index.js
-
-  mongo:
-    image: mongo:latest
-    restart: always
+  socket:
+    build: 
+      context: "./socket_server/"
+    # depends_on:
+    #   - mongo-rs0-2
+    networks:
+      - mongors-network
+    volumes:
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/socket_server/:/usr/src/app
+      - /home/shelby/workspace/nodeJs/quiz-o-meter/socket_server/node_modules
     ports:
-      - 27018:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
+      - 3003:3003
+    command: npm run start
+
+  # mongo-rs0-1:
+  #   image: "mongo-start"
+  #   build: ./database/mongo-rs0-1
+  #   container_name: "mongo-rs0-1"  
+    
+  #   ports:
+  #     - 27017:27017
+    
+  #   # environment:
+  #   #   MONGO_INITDB_ROOT_USERNAME: root
+  #   #   MONGO_INITDB_ROOT_PASSWORD: password
+  #   depends_on:
+  #     - mongo-rs0-2
+  #   volumes:
+  #     - "./database/mongo-rs0-1/data:/data/db"
+
+  
+  # mongo-rs0-2:
+  #   image: mongo:7.0
+  #   build: "./database/mongo-rs0-2"
+  #   container_name: "mongo-rs0-2"
+
+    
+    
+  #   restart: always
+  #   ports:
+  #     - 27018:27017
+    
+  #   # environment:
+  #   #   MONGO_INITDB_ROOT_USERNAME: root
+  #   #   MONGO_INITDB_ROOT_PASSWORD: password
+      
+    
+  #   volumes:
+  #     - "./database/mongo-rs0-2/data:/data/db"
+      
+  mongo1:
+    container_name: mongo1
+    image: mongo:4.4
+    volumes:
+      - ./database/mongo-rs0-1/data:/data/db
+      - ./database/setup/replicatSet.sh:/scripts/replicatSet.sh
+    networks:
+      - mongors-network
+    ports:
+      - 27021:27017
+    links:
+      - mongo2
+      
+    restart: always
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+  mongo2:
+    container_name: mongo2
+    image: mongo:4.4
+    volumes:
+      - ./database/mongo-rs0-2/data:/data/db
+    networks:
+      - mongors-network
+    ports:
+      - 27022:27017
+    restart: always
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+  # mongo3:
+  #   container_name: mongo3
+  #   image: mongo:4.4
+  #   volumes:
+  #     - ./mongors/data3:/data/db
+  #   networks:
+  #     - mongors-network
+  #   ports:
+  #     - 27023:27017
+  #   restart: always
+  #   entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+    
+    
 
 
   mongo-express:
@@ -67,11 +133,14 @@ services:
     restart: always
     ports:
       - 8081:8081
-      
+    depends_on:
+      - mongo1
+    networks:
+      - mongors-network
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_MONGODB_URL: mongodb://root:password@mongo:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://mongo1:27017/?replicaSet=dbrs
 
   # llama:
   #   image: manndshelby/llama2
@@ -79,4 +148,16 @@ services:
   #     - 11434:11434
     
   #   command: /bin/ollama serve
+
+  # setup-rs:
+  #   image: "setup-rs"
+  #   build: ./database/setup
+  #   depends_on:
+  #     - mongo-rs0-1
+      
+ 
+networks:
+  mongors-network:
+    driver: bridge
+
 

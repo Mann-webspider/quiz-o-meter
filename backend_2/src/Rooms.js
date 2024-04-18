@@ -19,9 +19,11 @@ class Rooms {
   }
   
 
-  static async addParticipant(username) {
+  static async addParticipant(username,roomId) {
     try {
-      const newUser = new User(username);
+      
+      const newUser = new User(username,roomId);
+      
       const dbUser = new UserM(newUser);
       await dbUser.save();
 
@@ -78,15 +80,23 @@ class Rooms {
 
   static async checkQuizAnswerAndSubmit(userId, quizzes,roomId) {
     // it will return the quiz answer is true or false
+    
     const quizFromDb = await findById("quizes",roomId)
     const listOfDbQuiz = storeQuizesFromDb(quizFromDb)
     // console.log(listOfDbQuiz);
     const dt = listOfDbQuiz.map( (quiz,idx)=>{
-      console.log(quizzes[idx]);
-      console.log(listOfDbQuiz[idx].quizId);
+      // console.log(quizzes[idx]);
+      
       if(quiz.quizId == quizzes[idx].quizId){
-        console.log("found quiz");
-        return quiz.checkAnswer(quizzes[idx].answer)
+        
+        var isCorrect = quiz.checkAnswer(quizzes[idx].answer)
+        var ans= quiz.options[quizzes[idx].answer]
+        const sub = {
+          ...quiz,
+          isCorrect:isCorrect,
+          studentAns: ans
+        }
+        return sub
         
       }
       

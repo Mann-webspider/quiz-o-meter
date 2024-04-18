@@ -1,4 +1,4 @@
-import React, {  useRef, useState } from "react";
+import React, {  useEffect, useRef, useState } from "react";
 // import supabase from "../utils/supabase";
 // import TextStroke from "../components/TextStroke";
 import Input from "../components/Input";
@@ -10,28 +10,49 @@ import Avatar from 'react-nice-avatar'
 import config from "../utils/avatar"
 import { useCookies } from 'react-cookie';
 import api from "../utils/axios";
+import { Payment, columns } from "../components/columns"
+
+import  DataTable  from "../components/tableData"
+import socket from "src/utils/socket";
+ function getData() {
+
+  // Fetch data from your API here.
+  const arr = []
+  arr.push({
+    id: "728ed52f",
+    amount: 100,
+    status: "pending",
+    student: "m@example.com",
+    marks: "15/20"
+  })
+  arr.push({
+    id: "728ed52f",
+    amount: 500,
+    status: "done",
+    student: "mannD@example.com",
+    marks: "1/20"
+  })
+  return arr
+}
+socket.connect("localhost:3003")
 function Teacher() {
-  // const [avatar] = useState();
+ 
   const [ques,setQues] = useState([])
   const {register,handleSubmit} = useForm()
-  // const inputRef = useRef()
-  const [cookie,setCookie]= useCookies()
+  const [cookie , setCookie] = useCookies()
+  const [dataS,setDataS] = useState([])
 
-//   useEffect(() => {
-//     const getUser = async () => {
-//       const { data } = await supabase.auth.getUser();
-//       if (data) {
-//         setAvatar(() => data.user.user_metadata.avatar_url);
+  useEffect(()=>{
+    const fetchUserData = ()=>{
+      socket.emit("user-update",123456)
+      socket.on("user-update", data =>{
+        console.log(data);
+      })
+      return ()=>{}
+    }
+    return fetchUserData()
 
-//         return;
-//       }
-//     };
-
-//     getUser();
-//   }, []);
-
-
-
+  },[])
 
 const onSubmit = ( data)=>{
   
@@ -46,6 +67,8 @@ const handleQuizSubmit = ()=>{
   })
 }
 
+const data = getData()
+console.log(data);
 
   return (
     <div className="bg-[#ededed] h-[100vh] z-[-10]">
@@ -79,6 +102,11 @@ const handleQuizSubmit = ()=>{
           </div>
         </div>
       </main>
+      <section className="analytics">
+      <div className="container mx-auto py-10">
+      <DataTable columns={columns} data={data} />
+    </div>
+      </section>
     </div>
   );
 }

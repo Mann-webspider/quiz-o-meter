@@ -1,69 +1,67 @@
 // socket io server configuration
-const { default: axios } = require('axios');
-const IoManager = require('./IoManager');
-const inst = new IoManager().getState()
-const io = inst.getIo()
+const { default: axios } = require("axios");
+const io = require("./IoManager");
+const { db } = require("./connect");
+
+async function watchUpdate(socket,roomId) {
+  console.log("MongoDB connection successful");
+
+  // Access the collection directly and perform queries
+  
+  const collection = db.collection("users");
+
+  // Find all documents in the collection
+  const changeStream = await collection.watch();
+  //   // Subscribe to events emitted by the change stream
+  changeStream.on("change", async (change) => {
+    
+    // console.log(socket);
+    
+    if (change.operationType == "update") {
+      console.log("Change event:", change.documentKey._id);
+      user = await db
+        .collection("users")
+        .findOne({ _id: change.documentKey._id});
+        if( user.roomId == 123456){
+          socket.emit("user-update", user)
+        
+        
+      }
+      //  socket.emit("user-update",user)
+    }
+  });
+}
+const sendData = async (sck, roomId) => {
+  try {
+    
+    
+    var user;
+    db.on("error", console.error.bind(console, "MongoDB connection error:"));
+    
+    db.once("open",await watchUpdate(sck,roomId));
+  } catch (e) {
+    console.log(e);
+  } finally {
+    // Recursively call fetchData after 3000 ms
+  }
+};
 
 // Define event handlers
-io.on('connection', (socket) => {
-  console.log('A user connected');
+io.on("connection", async (socket) => {
+  console.log("A user connected");
 
   // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
   });
 
   // Handle custom events
-  socket.on('chat message', (msg) => {
-    // console.log('Message:', msg);
-    // Broadcast the message to all connected clients
-    io.emit('chat message', msg);
-  });
-  
-  socket.on("join_room", async (data)=>{
+  socket.on("user-update", (roomId) => {
     
-    socket.join(data.roomId)
-    // newManager.addStudent(data.username,data.roomId)
-    const result = await axios.post("http://server:3001/api/students/rooms/joinRoom",{username:data.username,roomId:data.roomId}).then((data)=>{
-        return data.data
-    }).catch((e)=>{
-        console.log("error");
-    })
-    socket.emit("joined-room",`userCreated`)
-    // socket.join(data.roomId)-
-})
-  
-
-  
+    sendData(socket,roomId);
+   
+    
+  });
 });
 
-const sendData = async ()=>{
-
-        
-    try{
-        // const result = newManager.getStudentName("123456")
-        const result = await axios.get("http://server:3001/api/students/rooms/123456/participants").then((data)=>{
-            return data.data;
-        }).catch((e)=>{
-            console.log(e);
-        })
-        
-        if(result == null || result == undefined  || result == {}){
-            // console.log("i have been called by error");
-            io.emit("getStudents",[""])
-            return
-        }
-        // console.log("i have been called");
-        io.emit("getStudents",result)
-
-    }catch(e){
-        console.log("err");
-    }finally {
-        setTimeout(sendData, 3000); // Recursively call fetchData after 3000 ms
-    }
-
-
-}
-sendData()
-
-
+sendData();

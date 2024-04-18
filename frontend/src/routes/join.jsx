@@ -17,7 +17,7 @@ function Join() {
   const onSubmit = async(e) => {
     
     console.log(form)
-    const res = await api.post(`http://localhost:3001/api/students/rooms/${form.roomId}`)
+    const res = await api.post(`http://localhost:3001/api/students/rooms/${form.roomId}`,form)
     setCookie("userId",res.data.userId)
     navigation("/start")
   };

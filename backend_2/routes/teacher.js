@@ -41,7 +41,7 @@ router.post("/quizzes",async (req,res)=>{
 
 // Create a new room./
 router.post("/rooms",async  (req,res)=>{
-    console.log(req.body);
+    
     const name = req.body.teacherName
     const roomId = req.body.roomId
     
@@ -52,10 +52,10 @@ router.post("/rooms",async  (req,res)=>{
 //Retrieve details of a specific room created by the teacher.
 router.get("/rooms/:roomId",async (req,res)=>{
     const {roomId} = req.params
-    console.log(roomId);
+    
     const obj = await newManager.getRoom(roomId)
     
-    console.log(obj);
+    
     res.send(obj)
 
 })
@@ -64,6 +64,20 @@ router.get("/dummy/:roomId",async (req,res)=>{
     const {roomId} = req.params;
     const ob = await newManager.dummy(roomId)
     res.json(ob)
+})
+
+router.get("/analytics/:roomId",async (req,res)=>{
+    const {roomId} = req.params
+    const {userId} = req.cookies
+    const obj = await newManager.getRoom(roomId)
+    
+    if(obj.teacher != userId){
+        res.send("not authorized")
+        
+    }
+    const rs = await newManager.getAnalytics(userId,roomId)
+    console.log(rs);
+    res.json(rs)
 })
 // Update an existing room created by the teacher.
 // router.put("/rooms/:id")
