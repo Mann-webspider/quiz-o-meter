@@ -163,10 +163,10 @@ export default function DataTableDemo({columns,data}) {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn("email")?.getFilterValue() ) ?? ""}
+          placeholder="Filter students..."
+          value={(table.getColumn("student")?.getFilterValue() ) ?? ""}
           onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
+            table.getColumn("student")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />

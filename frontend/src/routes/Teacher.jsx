@@ -40,19 +40,43 @@ function Teacher() {
   const [ques,setQues] = useState([])
   const {register,handleSubmit} = useForm()
   const [cookie , setCookie] = useCookies()
-  const [dataS,setDataS] = useState([])
-
+  const [dataS,setDataS] = useState([{}])
+  const [update,setUpdate] = useState(0)
   useEffect(()=>{
     const fetchUserData = ()=>{
-      socket.emit("user-update",123456)
+      socket.emit("user",cookie.roomId)
+      socket.emit("user-IU",cookie.roomId)
+      socket.on("user",data=>{
+        setDataS(()=>data)
+      })
+      // socket.emit("user-insert",123456)
       socket.on("user-update", data =>{
-        console.log(data);
+        
+        const newData = dataS.map((d)=>{
+          if(d.id == data.id){
+            return data
+          }
+          else{
+            return d
+          }
+        })
+
+        setDataS(()=>newData)
+        setUpdate((prev)=>prev+1)
+        
+      })
+      socket.on("user-insert",data=>{
+        
+       
+        setDataS(()=>[...dataS,data])
+        setUpdate((prev)=>prev+1)
+        
       })
       return ()=>{}
     }
     return fetchUserData()
 
-  },[])
+  },[update])
 
 const onSubmit = ( data)=>{
   
@@ -67,8 +91,8 @@ const handleQuizSubmit = ()=>{
   })
 }
 
-const data = getData()
-console.log(data);
+// const data = getData()
+// console.log(data);
 
   return (
     <div className="bg-[#ededed] h-[100vh] z-[-10]">
@@ -104,7 +128,7 @@ console.log(data);
       </main>
       <section className="analytics">
       <div className="container mx-auto py-10">
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns} data={dataS} />
     </div>
       </section>
     </div>

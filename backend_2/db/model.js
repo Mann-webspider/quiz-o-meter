@@ -6,7 +6,7 @@ const UserSchema = new Schema(
     username: { type: String },
     role: { type: String, default: "student" },
     roomId:{type:String},
-    submissions:[{type:Object,default:[]}]
+    submissions:{type:[{type:Object,default:null}] , default:null}
   },
   { timestamps: true }
 );

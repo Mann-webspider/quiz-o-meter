@@ -32,7 +32,7 @@ const router = createBrowserRouter([
     path:"/teacher",
     element: <Teacher/>
   },
-  {
+  { 
     path:"/create",
     element:<CreateRoom/>
   },
