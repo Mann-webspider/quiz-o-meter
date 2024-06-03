@@ -13,7 +13,7 @@ async function watchUpdate(socket,roomId) {
   // socket.emit("user-insert","i am from watch update")
   // Find all documents in the collection
   const changeStream = await collection.watch();
-  //   // Subscribe to events emitted by the change stream
+  //   // Subscribe to events emitted by the change stream 
   changeStream.on("change", async (change) => {
     
     

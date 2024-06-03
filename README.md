@@ -22,3 +22,11 @@
 
 - (free frontend)[https://freefrontend.com/css-radio-buttons/page/2/]
 - css scan ['https://getcssscan.com/css-buttons-examples']
+
+## TODO
+- session management 
+- flash messassge , react toast
+- declaring errror to client 
+- special script to end session for student when they change tab ✅
+- student cant select text ✅
+

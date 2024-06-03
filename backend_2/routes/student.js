@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+var flash = require('connect-flash');
 
 const { newManager } = require("../init");
 // Retrieve a list of rooms available for students to join.
@@ -12,7 +13,9 @@ router.post("/rooms/:roomId",async (req,res)=>{
     
     const userId =await newManager.addStudent(username,roomId);
     res.contentType("application/json")
-    res.cookie("userId",userId).json({"userId":userId})
+    req.session.userId = userId
+    req.session.cookie('userId',userId)
+    res.json({"userId":userId})
 })
 
 // Retrieve details of a quiz within a specific room for student participation.
@@ -45,6 +48,11 @@ router.get("/rooms/:id/participants",async (req, res) => {
 router.post("/rooms/quizzes/answers", async (req,res)=>{
     const {roomId,userId} = req.cookies;
     const answers = req.body;
+    console.log(answers.type);
+    if(answers.type){
+      console.log(answers.type);
+      req.flash('danger','cheater caught')
+    }
     
     const result = await newManager.checkManagerQuizAnswer(userId,roomId,answers)
     res.send(result)

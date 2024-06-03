@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+var flash = require('connect-flash');
 // const {newManager} = require("../init")
 // const QuizManager = require("../src/QuizManager");
 const { newManager } = require("../init");
@@ -46,8 +47,9 @@ router.post("/rooms",async  (req,res)=>{
     const roomId = req.body.roomId
     
     const result = newManager.createRoom(name,roomId)
-    
-    res.cookie("teacherId",result).json({"roomId":roomId,"teacherId":result})
+    req.session.teacherId = result
+    req.session.cookie('teacherId',result)
+    res.json({"roomId":roomId,"teacherId":result})
 })
 //Retrieve details of a specific room created by the teacher.
 router.get("/rooms/:roomId",async (req,res)=>{

@@ -8,9 +8,9 @@ import Button from "../components/Button";
 import { useForm } from "react-hook-form";
 function Start() {
   const [quiz, setQuiz] = useState([]);
-  const [cookie, setCookie] = useCookies();
+  const [cookie] = useCookies();
   const {register,handleSubmit} = useForm();
-  const [answer,setAnswer] = useState([])
+  // const [answer,setAnswer] = useState([])
 
   useEffect(() => {
     async function getQuiz() {
@@ -26,16 +26,36 @@ function Start() {
   }, []);
 
 
+  function userCheatingBehavior(){
+
+    window.addEventListener('visibilitychange',async (e)=>{
+      if(document.visibilityState !== 'visible'){
+        alert("tari maa no bhosdo cheating karta hai tu ")
+        try {
+          // Send the array of quiz IDs and answers to the API endpoint
+          var data = {"type":"tabChange"}
+          const res = await api.post("http://localhost:3001/api/students/rooms/quizzes/answers", data, { withCredentials: true });
+          console.log(res.data);
+        } catch (error) {
+          console.error("Error:", error);
+        }
+        console.log("submit");
+      }
+    })
+
+  }
+  userCheatingBehavior()
+ 
 
   const onSubmit = async(data)=>{
     const arr = []
-    const dum =Object.entries(data.answers)
+    const dum =Object.entries(data?.answers)
     
     for (const [key,val] of dum){
       
       arr.push({
-        "quizId":key,
-        "answer":val
+        "quizId":key | 'none',
+        "answer":val  | 'none'
       })
     }
     try {
