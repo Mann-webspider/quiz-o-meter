@@ -1,1 +1,4 @@
 /node_modules
+database/mongo
+database/mongo-rs0-1
+database/mongo-rs0-2
