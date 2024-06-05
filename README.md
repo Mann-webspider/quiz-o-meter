@@ -1,4 +1,5 @@
 # quiz-o-meter
+Quiz-O-Meter is a web-based application designed to facilitate interactive quizzes and real-time assessments in educational settings. With Quiz-O-Meter, teachers can easily create and manage quiz rooms, while students can join these rooms to participate in quizzes, answer questions, and receive instant feedback on their performance.
 
 ### Build a simple quizing app 
 
