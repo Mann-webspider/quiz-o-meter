@@ -23,7 +23,7 @@ router.post("/quizzes",async (req,res)=>{
     
     const cookie = req.cookies;
     const body = req.body;
-    
+    console.log(cookie);
     const result = await newManager.addBulkQuiz(cookie.roomId,body)
     
     res.json(result)
@@ -46,19 +46,24 @@ router.post("/rooms",async  (req,res)=>{
     const name = req.body.teacherName
     const roomId = req.body.roomId
     
-    const result = newManager.createRoom(name,roomId)
+    const result =await newManager.createRoom(name,roomId)
+    console.log(result);
     req.session.teacherId = result
-    req.session.cookie('teacherId',result)
+    res.cookie("teacherId",result)
+    req.session.roomId = roomId
+    
     res.json({"roomId":roomId,"teacherId":result})
 })
 //Retrieve details of a specific room created by the teacher.
-router.get("/rooms/:roomId",async (req,res)=>{
-    const {roomId} = req.params
+router.get("/rooms",async (req,res)=>{
+    // const {roomId} = req.params
+    const roomId = req.session.roomId
+    console.log(roomId);
+    // const obj = await newManager.getRoom(roomId)
+    // const ques = await newManager.getQuizzes(roomId)
     
-    const obj = await newManager.getRoom(roomId)
-    
-    
-    res.send(obj)
+    // res.json({'obj':obj,"ques":ques})
+    res.send("ok")
 
 })
 

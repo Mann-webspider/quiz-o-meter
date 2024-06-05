@@ -6,11 +6,13 @@ import { useCookies } from "react-cookie";
 import RadioGroup from "../components/Radio-group";
 import Button from "../components/Button";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 function Start() {
   const [quiz, setQuiz] = useState([]);
   const [cookie] = useCookies();
   const {register,handleSubmit} = useForm();
   // const [answer,setAnswer] = useState([])
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function getQuiz() {
@@ -30,16 +32,18 @@ function Start() {
 
     window.addEventListener('visibilitychange',async (e)=>{
       if(document.visibilityState !== 'visible'){
-        alert("tari maa no bhosdo cheating karta hai tu ")
+        alert("your test is submitted ! You have change the tabs while giving test")
         try {
           // Send the array of quiz IDs and answers to the API endpoint
           var data = {"type":"tabChange"}
           const res = await api.post("http://localhost:3001/api/students/rooms/quizzes/answers", data, { withCredentials: true });
-          console.log(res.data);
+          console.log(res);
+          prompt("tell us the reason to change tab")
+          window.location.replace("/")
         } catch (error) {
           console.error("Error:", error);
         }
-        console.log("submit");
+        
       }
     })
 
@@ -54,14 +58,15 @@ function Start() {
     for (const [key,val] of dum){
       
       arr.push({
-        "quizId":key | 'none',
-        "answer":val  | 'none'
+        "quizId":key,
+        "answer":val
       })
     }
     try {
       // Send the array of quiz IDs and answers to the API endpoint
       const res = await api.post("http://localhost:3001/api/students/rooms/quizzes/answers", arr, { withCredentials: true });
       console.log(res.data);
+      window.location.replace("/")
     } catch (error) {
       console.error("Error:", error);
     }

@@ -18,7 +18,7 @@ function Join() {
     
     console.log(form)
     const res = await api.post(`http://localhost:3001/api/students/rooms/${form.roomId}`,form)
-    setCookie("userId",res.data.userId)
+    setCookie("userId",res.data.userId,{maxAge:1000*60*5})
     navigation("/start")
   };
   

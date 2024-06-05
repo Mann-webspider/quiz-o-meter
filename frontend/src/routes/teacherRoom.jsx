@@ -1,4 +1,4 @@
-import React, {  useState } from "react";
+import React, {  useEffect, useState } from "react";
 import TextStroke from "../components/TextStroke";
 import OtpInput from "../components/Otp";
 import Button from "../components/Button";
@@ -7,17 +7,26 @@ import api from "../utils/axios";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from 'react-cookie';
 function CreateRoom() {
- 
+  
   const navigate = useNavigate();
   const [cookie,setCookie]= useCookies()
   const [form, setForm] = useState({teacherName:"",roomId:""});
+  useEffect(()=>{
+    async function getRoom(){
+      if(cookie.roomId){
+        navigate("/teacher")
+      }
+    }
+    getRoom()
+    return ()=>{}
+  })
   const onSubmit = (e) => {
     
     console.log(form)
     api.post("http://localhost:3001/api/teachers/rooms",form).then((res)=>{
       console.log(res);
-      setCookie("roomId",res.data.roomId)
-      setCookie("userId",res.data.userId)
+      setCookie("roomId",res.data.roomId,{maxAge:1000*60*5})
+      setCookie("userId",res.data.teacherId,{maxAge:1000*60*5})
       navigate("/teacher")
     }).catch((err)=>{
       console.log(err);

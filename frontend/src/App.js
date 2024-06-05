@@ -29,10 +29,10 @@ function App() {
     navigate("/create")
     // if not then navigate to login page
   }
-  
-  if (!session) {
-    navigate("/login");
-  } 
+
+  // if (!session) {
+  //   navigate("/login");
+  // } 
     return (
       <div className="App h-full w-full ">
         <div className="img h-full w-full object-cover overflow-hidden absolute z-[-5]">

@@ -1,6 +1,6 @@
 const express = require("express");
 var session = require('express-session')
-// const cookieParser = require("cookie-parser");
+const cookieParser = require("cookie-parser");
 // create express application 
 const app = express();
 // const init = require("./init")
@@ -17,15 +17,17 @@ app.use(cors({
     credentials: true,
 }))
 app.use(express.json())
-// app.use(cookieParser())
+app.use(cookieParser())
 app.use(flash())
 app.use(session({
     secret:"your-secret-key",
     saveUninitialized:false,
     resave: false,
     cookie: {
-        maxAge: 1000*60*10
-    }
+        maxAge: 60*60*5,
+        httpOnly:true
+    },
+    
 }))
 
 

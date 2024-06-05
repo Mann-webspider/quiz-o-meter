@@ -25,7 +25,8 @@ class QuizManager {
       
       const mod = new QuizManagerModel({roomId,roomObj:newRoom._id})
       await mod.save()
-      return 0;
+      return teacher._id.toString()
+      
     } catch (e) {
       console.log(e);
     }
@@ -98,7 +99,7 @@ class QuizManager {
 
   async getRoom(roomId) {
     const room =await QuizManagerModel.findOne({roomId}).populate("roomObj")
-    
+    console.log(roomId);
     //WIP
     return room.roomObj;
   }

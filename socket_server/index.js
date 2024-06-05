@@ -18,7 +18,7 @@ async function watchUpdate(socket,roomId) {
     
     
     
-    if (change.operationType == "update") {
+    if (change.operationType == "update") { 
       console.log("Change event:", change.documentKey._id);
       user = await db
         .collection("users")
@@ -78,6 +78,10 @@ io.on("connection", async (socket) => {
     sendData(socket,roomId);
   })
   socket.on("user",async (roomId) => {
+    if(!roomId){
+      socket.emit('user',[])
+      return
+    }
     const room =await db.collection("rooms").findOne({roomId : roomId.toString()})
     const students = await populateParticipants(room)
     const res = studentsTableFormat(students)

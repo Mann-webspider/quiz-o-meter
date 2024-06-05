@@ -1,6 +1,7 @@
 const { db } = require("./connect");
 
 function formatForTable(data){
+    console.log(data);
     const correct = data.submissions.filter((dt)=>(dt.isCorrect == true))
     console.log(data.submissions.length == 0?"Pending":"Done");
 const dt = {
@@ -18,7 +19,7 @@ function studentsTableFormat(list){
     })
     return nw
 }
-
+ 
 async function populateParticipants(doc){
     if (doc) {
         // Step 2: Extract participant IDs from the room document

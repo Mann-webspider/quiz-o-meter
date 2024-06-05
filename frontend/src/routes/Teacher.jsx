@@ -14,34 +14,20 @@ import { Payment, columns } from "../components/columns"
 
 import  DataTable  from "../components/tableData"
 import socket from "src/utils/socket";
- function getData() {
-
-  // Fetch data from your API here.
-  const arr = []
-  arr.push({
-    id: "728ed52f",
-    amount: 100,
-    status: "pending",
-    student: "m@example.com",
-    marks: "15/20"
-  })
-  arr.push({
-    id: "728ed52f",
-    amount: 500,
-    status: "done",
-    student: "mannD@example.com",
-    marks: "1/20"
-  })
-  return arr
-}
 socket.connect("localhost:3003")
 function Teacher() {
- 
+  
   const [ques,setQues] = useState([])
   const {register,handleSubmit} = useForm()
   const [cookie , setCookie] = useCookies()
   const [dataS,setDataS] = useState([{}])
   const [update,setUpdate] = useState(0)
+  async function getData() {
+  
+   let {obj , ques} = await api.get(`http://localhost:3001/api/teachers/rooms`,{withCredentials:true})
+   return obj , ques
+   
+  }
   useEffect(()=>{
     const fetchUserData = ()=>{
       socket.emit("user",cookie.roomId)
@@ -91,8 +77,8 @@ const handleQuizSubmit = ()=>{
   })
 }
 
-// const data = getData()
-// console.log(data);
+var obj,quesData = getData()
+console.log(quesData);
 
   return (
     <div className="bg-[#ededed] h-[100vh] z-[-10]">
