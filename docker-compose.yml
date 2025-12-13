@@ -1,163 +1,82 @@
-version: '3.9'
-
 services:
   react-app:
-    
+    container_name: frontend
     build:
       context: "./frontend/"
-      
+      dockerfile: Dockerfile
     volumes:
-      
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/frontend:/usr/src/app
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/frontend/node_modules
+      # Mount source code for hot reload
+      - './frontend:/usr/src/app'
+      # Exclude node_modules from mounting (use container's node_modules)
+      - '/usr/src/app/node_modules'
+      - '/usr/src/app/.pnpm-store'
     ports:
       - 3000:3000
-      
-    command: npm start 
-  server:
-    container_name: "server"
-    build:
-      context: "/home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/"
-      dockerfile: Dockerfile
-      
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     networks:
-      - mongors-network
-    # depends_on:
-    #   - mongo-rs0-1
-      
+      - app-network
+    command: pnpm start
+
+  server:
+    container_name: backend
+    build:
+      context: ./backend_2/
+      dockerfile: Dockerfile
+    networks:
+      - app-network
+    depends_on:
+      redis:
+        condition: service_healthy
     volumes:
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/:/usr/src/app
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/backend_2/node_modules
+      # Mount source code for hot reload
+      - './backend_2:/usr/src/app'
+      # Exclude node_modules from mounting
+      - '/usr/src/app/node_modules'
+      - '/usr/src/app/.pnpm-store'
     ports:
       - 3001:3001
-      
-      
-    command: 
-      - npm
-      - run
-      - start
-  
-  socket:
-    build: 
-      context: "./socket_server/"
-    # depends_on:
-    #   - mongo-rs0-2
-    networks:
-      - mongors-network
-    volumes:
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/socket_server/:/usr/src/app
-      - /home/shelby/workspace/nodeJs/quiz-o-meter/socket_server/node_modules
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+    command: pnpm run start
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
     ports:
-      - 3003:3003
-    command: npm run start
-
-  # mongo-rs0-1:
-  #   image: "mongo-start"
-  #   build: ./database/mongo-rs0-1
-  #   container_name: "mongo-rs0-1"  
-    
-  #   ports:
-  #     - 27017:27017
-    
-  #   # environment:
-  #   #   MONGO_INITDB_ROOT_USERNAME: root
-  #   #   MONGO_INITDB_ROOT_PASSWORD: password
-  #   depends_on:
-  #     - mongo-rs0-2
-  #   volumes:
-  #     - "./database/mongo-rs0-1/data:/data/db"
-
-  
-  # mongo-rs0-2:
-  #   image: mongo:7.0
-  #   build: "./database/mongo-rs0-2"
-  #   container_name: "mongo-rs0-2"
-
-    
-    
-  #   restart: always
-  #   ports:
-  #     - 27018:27017
-    
-  #   # environment:
-  #   #   MONGO_INITDB_ROOT_USERNAME: root
-  #   #   MONGO_INITDB_ROOT_PASSWORD: password
-      
-    
-  #   volumes:
-  #     - "./database/mongo-rs0-2/data:/data/db"
-      
-  mongo1:
-    container_name: mongo1
-    image: mongo:4.4
+      - 6379:6379
     volumes:
-      - ./database/mongo-rs0-1/data:/data/db
-      - ./database/setup/replicatSet.sh:/scripts/replicatSet.sh
+      - redis-data:/data
     networks:
-      - mongors-network
-    ports:
-      - 27021:27017
-    links:
-      - mongo2
-      
-    restart: always
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
-  mongo2:
-    container_name: mongo2
-    image: mongo:4.4
-    volumes:
-      - ./database/mongo-rs0-2/data:/data/db
-    networks:
-      - mongors-network
-    ports:
-      - 27022:27017
-    restart: always
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
-  # mongo3:
-  #   container_name: mongo3
-  #   image: mongo:4.4
-  #   volumes:
-  #     - ./mongors/data3:/data/db
-  #   networks:
-  #     - mongors-network
-  #   ports:
-  #     - 27023:27017
-  #   restart: always
-  #   entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
-    
-    
+      - app-network
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
-
-  mongo-express:
-    image: mongo-express:latest
-    restart: always
+  redis-commander:
+    container_name: redis-commander
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379
     ports:
       - 8081:8081
     depends_on:
-      - mongo1
+      - redis
     networks:
-      - mongors-network
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_MONGODB_URL: mongodb://mongo1:27017/?replicaSet=dbrs
+      - app-network
 
-  # llama:
-  #   image: manndshelby/llama2
-  #   ports:
-  #     - 11434:11434
-    
-  #   command: /bin/ollama serve
+volumes:
+  redis-data:
+    driver: local
 
-  # setup-rs:
-  #   image: "setup-rs"
-  #   build: ./database/setup
-  #   depends_on:
-  #     - mongo-rs0-1
-      
- 
 networks:
-  mongors-network:
+  app-network:
     driver: bridge
-
-

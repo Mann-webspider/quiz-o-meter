@@ -1,129 +1,206 @@
 const Rooms = require("./Rooms");
-const { QuizManagerModel, UserM, QuizM, RoomM } = require("../db/model");
-const {storeQuizesFromDb, findById} = require("../utils/storeQuiz");
+const User = require("./User");
+const Quiz = require("./Quiz");
+const {
+  QuizManagerModel,
+  UserModel,
+  RoomModel,
+} = require("../db/redis-models");
 
 class QuizManager {
   constructor(roomsInstance = {}) {
-    
     this.roomsInstance = roomsInstance;
-    
   }
+
+  /**
+   * Create a new room with teacher
+   * @param {string} teacherName
+   * @param {string} roomId
+   * @returns {Promise<string>} teacherId
+   */
   async createRoom(teacherName, roomId) {
     try {
-      // to create room first make instance of the Room Object And teacher User object
-      // const teacher = new User(teacherName,"teacher")
-      const teacher = new UserM({ username: teacherName,roomId, role: "teacher" });
-      teacher.save();
+      // Create teacher user
+      const teacher = new User(teacherName, roomId, "teacher");
+      const teacherId = await teacher.save();
 
-      // const newRoom = new Rooms(teacher,roomId);
-      const newRoom = new RoomM({ teacher: teacher._id, roomId: roomId });
-      await newRoom.save();
+      // Create room
+      await RoomModel.create({ teacherId, roomId });
 
-      // then assign the room instance to quizManager rommInstance dictionary
-      // this.roomsInstance[roomId] = newRoom._id;
-      
-      
-      const mod = new QuizManagerModel({roomId,roomObj:newRoom._id})
-      await mod.save()
-      return 0;
-    } catch (e) {
-      console.log(e);
+      // Create quiz manager entry
+      await QuizManagerModel.create(roomId);
+
+      return teacherId;
+    } catch (error) {
+      console.log("Error creating room:", error);
+      throw error;
     }
   }
 
+  /**
+   * Add student to room
+   * @param {string} username
+   * @param {string} roomId
+   * @returns {Promise<string>} userId
+   */
   async addStudent(username, roomId) {
-    try{
- // this method will engage when from frontend students enter their name and room id
-    // create the student object
-    // then find the room that student whats to join
-    const roomIns =await findById("manager",roomId);
-    const userId = await Rooms.addParticipant(username,roomId);
-    await RoomM.findByIdAndUpdate({_id:roomIns.roomObj},{$push:{participants:userId}})
-    return userId;
-    }catch{
-      return "No room Found , Or no room created "
+    try {
+      // Check if room exists
+      const room = await RoomModel.findById(roomId);
+      if (!room) {
+        throw new Error("No room found, or no room created");
+      }
+
+      // Add student to room
+      const userId = await Rooms.addParticipant(username, roomId);
+      return userId;
+    } catch (error) {
+      console.log("Error adding student:", error);
+      throw error;
     }
-   
   }
 
+  /**
+   * Get all student names in a room
+   * @param {string} roomId
+   * @returns {Promise<Array>}
+   */
   async getStudentName(roomId) {
     try {
-      const roomIns = await this.getRoom(roomId);
-     
-      const namesList = await Rooms.getParticipantName(roomIns);
-     
-      const newList = [...namesList.map((user) => {return {studentId:user._id,student:user.username}})];
-     
+      const namesList = await Rooms.getParticipantName(roomId);
+
+      const newList = namesList.map((user) => ({
+        studentId: user.userId,
+        student: user.username,
+      }));
+
       return newList;
-    } catch (e) {
-      console.log("no room is created");
-      return [""];
+    } catch (error) {
+      console.log("Error getting student names:", error);
+      return [];
     }
   }
 
-  
-
+  /**
+   * Add multiple quizzes to room
+   * @param {string} roomId
+   * @param {Array} listOfQuiz
+   * @returns {Promise<Array>} quizIds
+   */
   async addBulkQuiz(roomId, listOfQuiz) {
-    
-    var res;
     try {
-      res = await RoomM.findOne({ roomId });
+      // Check if room exists
+      const room = await RoomModel.findById(roomId);
+      if (!room) {
+        throw new Error("No room found");
+      }
 
-      const list = await Rooms.addBulkRoomQuiz(listOfQuiz, roomId);
-
-      const up = await RoomM.updateOne({ _id: res._id }, { quizzes: list });
-
-      return list;
-    } catch (e) {
-      console.log(e);
-      return "no room found"
+      // Add quizzes
+      const quizIds = await Rooms.addBulkRoomQuiz(listOfQuiz, roomId);
+      return quizIds;
+    } catch (error) {
+      console.log("Error adding bulk quiz:", error);
+      throw error;
     }
   }
 
+  /**
+   * Get quizzes for students (without answers)
+   * @param {string} roomId
+   * @returns {Promise<Array>}
+   */
   async getQuizzes(roomId) {
-    // Find all quizes of roomId in Quizes collection
-    const quizes = await QuizM.find({roomId})
-    // store all database list of quizes in class object quiz  eg=> new Quiz()
-    const datas = storeQuizesFromDb(quizes)
-    //extract all data from 
-    const res = Rooms.getRoomQuiz(datas)
- 
-    return res;
+    try {
+      // Find all quizzes of roomId
+      const quizzes = await Quiz.findByRoom(roomId);
+
+      // Extract data without answers
+      const res = Rooms.getRoomQuiz(quizzes);
+      return res;
+    } catch (error) {
+      console.log("Error getting quizzes:", error);
+      return [];
+    }
   }
+
+  /**
+   * Get quizzes for teachers (with answers)
+   * @param {string} roomId
+   * @returns {Promise<Array>}
+   */
   async getTeacherQuizzes(roomId) {
-    // Find all quizes of roomId in Quizes collection
-    const quizes = await QuizM.find({roomId})    
-    return quizes;
+    try {
+      // Find all quizzes with answers
+      const quizzes = await Quiz.findByRoom(roomId);
+      return quizzes.map((q) => q.toObject());
+    } catch (error) {
+      console.log("Error getting teacher quizzes:", error);
+      return [];
+    }
   }
 
+  /**
+   * Get room details
+   * @param {string} roomId
+   * @returns {Promise<Object>}
+   */
   async getRoom(roomId) {
-    const room =await QuizManagerModel.findOne({roomId}).populate("roomObj")
-    
-    //WIP
-    return room.roomObj;
+    try {
+      const room = await RoomModel.findById(roomId);
+      return room;
+    } catch (error) {
+      console.log("Error getting room:", error);
+      throw error;
+    }
   }
 
-
+  /**
+   * Check student answers and update submissions
+   * @param {string} studentId
+   * @param {string} roomId
+   * @param {Array} quizzes - Student answers
+   * @returns {Promise<Array>}
+   */
   async checkManagerQuizAnswer(studentId, roomId, quizzes) {
     try {
-      
-      
-      const res = await Rooms.checkQuizAnswerAndSubmit(studentId,quizzes,roomId);
-      const dbRs = await UserM.findByIdAndUpdate(studentId,{submissions:res});
-      
-      return res
+      const res = await Rooms.checkQuizAnswerAndSubmit(
+        studentId,
+        quizzes,
+        roomId
+      );
+      return res;
     } catch (error) {
-      console.log(error);
-      return 0;
+      console.log("Error checking answers:", error);
+      throw error;
     }
-
   }
 
-  async getAnalytics(teacherId,roomId){
-    const roomIns = await RoomM.find({roomId}).populate("participants",["submissions"]);
-    // console.log(roomIns.);
-    const res = roomIns[0].participants[0].submissions
-    return res
+  /**
+   * Get analytics for a room
+   * @param {string} teacherId
+   * @param {string} roomId
+   * @returns {Promise<Array>}
+   */
+  async getAnalytics(teacherId, roomId) {
+    try {
+      // Get all participants in the room
+      const participants = await RoomModel.getParticipantsWithDetails(roomId);
+
+      // Extract submissions from all participants
+      const allSubmissions = participants
+        .filter((p) => p.role === "student")
+        .map((participant) => ({
+          studentId: participant.userId,
+          studentName: participant.username,
+          submissions: participant.submissions || [],
+        }));
+
+      return allSubmissions;
+    } catch (error) {
+      console.log("Error getting analytics:", error);
+      return [];
+    }
   }
 }
+
 module.exports = QuizManager;

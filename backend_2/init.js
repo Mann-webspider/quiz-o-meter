@@ -1,10 +1,6 @@
-const IoManager = require("./ioManager")
-const QuizManager = require("./src/QuizManager")
+const QuizManager = require("./src/QuizManager");
 
+// Initialize QuizManager instance
+const newManager = new QuizManager();
 
-var newManager;
-
-newManager = new QuizManager()
-
-const io = new IoManager().getIo()
-module.exports={newManager , io } 
+module.exports = { newManager };

@@ -1,11 +1,20 @@
-FROM node:latest
+FROM node:20-alpine
+
+# Install pnpm globally
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install 
-COPY ./src ./src
-# VOLUME [ "./" , "./" ]
-# VOLUME [ "./node_modules" ]
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies with pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
 EXPOSE 3001
 
-CMD npm run dev
+# Development mode with hot reload
+CMD ["pnpm", "run", "start"]

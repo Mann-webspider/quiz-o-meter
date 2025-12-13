@@ -1,0 +1,137 @@
+### Variables
+@baseUrl = http://localhost:3001
+@roomId = room123
+@teacherName = John Doe
+@studentName = Alice
+
+### Health Check
+GET {{baseUrl}}/health
+
+### ==================== TEACHER ENDPOINTS ====================
+
+### 1. Create Room (Teacher)
+# @name createRoom
+POST {{baseUrl}}/api/teachers/rooms
+Content-Type: application/json
+
+{
+  "teacherName": "{{teacherName}}",
+  "roomId": "{{roomId}}"
+}
+
+### 2. Get Teacher's Quizzes
+GET {{baseUrl}}/api/teachers/quizzes
+Cookie: roomId={{roomId}}; teacherId=user_1_1234567890
+
+### 3. Add Quizzes (Teacher)
+POST {{baseUrl}}/api/teachers/quizzes
+Content-Type: application/json
+Cookie: roomId={{roomId}}; teacherId=user_1_1234567890
+
+[
+  {
+    "question": "What is 2+2?",
+    "options": ["3", "4", "5", "6"],
+    "answer": "1"
+  },
+  {
+    "question": "What is the capital of France?",
+    "options": ["London", "Berlin", "Paris", "Rome"],
+    "answer": "2"
+  },
+  {
+    "question": "What is the largest planet?",
+    "options": ["Earth", "Mars", "Jupiter", "Saturn"],
+    "answer": "2"
+  }
+]
+
+### 4. Get Room Details (Teacher)
+GET {{baseUrl}}/api/teachers/rooms/{{roomId}}
+
+### 5. Get Analytics (Teacher)
+GET {{baseUrl}}/api/teachers/analytics/{{roomId}}
+Cookie: teacherId=user_1_1234567890
+
+### ==================== STUDENT ENDPOINTS ====================
+
+### 6. Join Room (Student)
+# @name joinRoom
+POST {{baseUrl}}/api/students/rooms/{{roomId}}
+Content-Type: application/json
+
+{
+  "username": "{{studentName}}"
+}
+
+### 7. Get Quizzes (Student View - No Answers)
+GET {{baseUrl}}/api/students/rooms/{{roomId}}
+
+### 8. Get Participants in Room
+GET {{baseUrl}}/api/students/rooms/{{roomId}}/participants
+
+### 9. Submit Quiz Answers (Student)
+# Replace quiz IDs with actual IDs from step 7
+POST {{baseUrl}}/api/students/rooms/quizzes/answers
+Content-Type: application/json
+Cookie: roomId={{roomId}}; userId=user_2_1234567891
+
+[
+  {
+    "quizId": "quiz_1_1734091234567",
+    "answer": "1"
+  },
+  {
+    "quizId": "quiz_2_1734091234568",
+    "answer": "2"
+  },
+  {
+    "quizId": "quiz_3_1734091234569",
+    "answer": "2"
+  }
+]
+
+### ==================== ADDITIONAL TESTS ====================
+
+### Join Room - Second Student
+POST {{baseUrl}}/api/students/rooms/{{roomId}}
+Content-Type: application/json
+
+{
+  "username": "Bob"
+}
+
+### Join Room - Third Student
+POST {{baseUrl}}/api/students/rooms/{{roomId}}
+Content-Type: application/json
+
+{
+  "username": "Charlie"
+}
+
+### ==================== ERROR CASES ====================
+
+### Missing Teacher Name
+POST {{baseUrl}}/api/teachers/rooms
+Content-Type: application/json
+
+{
+  "roomId": "{{roomId}}"
+}
+
+### Missing Username
+POST {{baseUrl}}/api/students/rooms/{{roomId}}
+Content-Type: application/json
+
+{
+}
+
+### Invalid Room ID
+GET {{baseUrl}}/api/students/rooms/invalidroom
+
+### Submit Empty Answers
+POST {{baseUrl}}/api/students/rooms/quizzes/answers
+Content-Type: application/json
+Cookie: roomId={{roomId}}; userId=user_2_1234567891
+
+[]

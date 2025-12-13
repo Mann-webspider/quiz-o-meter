@@ -1,89 +1,159 @@
 const express = require("express");
 const router = express.Router();
-// const {newManager} = require("../init")
-// const QuizManager = require("../src/QuizManager");
 const { newManager } = require("../init");
 
-
-
-// Retrieve a list of quizzes created by the teacher.
-router.get("/quizzes",async (req,res)=>{
+/**
+ * GET /api/teachers/quizzes
+ * Retrieve a list of quizzes created by the teacher
+ */
+router.get("/quizzes", async (req, res) => {
+  try {
     const cookie = req.cookies;
-    const body = req.body;
-    const result = await newManager.getTeacherQuizzes(cookie.roomId)
-    res.json(result)
-})
 
-// Retrieve details of a specific quiz created by the teacher.
-// router.get("/quizzes/:id")
-
-// Create a new quiz.
-router.post("/quizzes",async (req,res)=>{
-    
-    const cookie = req.cookies;
-    const body = req.body;
-    
-    const result = await newManager.addBulkQuiz(cookie.roomId,body)
-    
-    res.json(result)
-})
-
-// Update an existing quiz created by the teacher.
-// router.put("/quizzes/:id")
-
-// Delete a quiz created by the teacher.
-// router.delete("/quizzes/:id")
-
-// Retrieve a list of rooms created by the teacher.
-// router.get("/rooms")
-
-
-
-// Create a new room./
-router.post("/rooms",async  (req,res)=>{
-    
-    const name = req.body.teacherName
-    const roomId = req.body.roomId
-    
-    const result = newManager.createRoom(name,roomId)
-    
-    res.cookie("teacherId",result).json({"roomId":roomId,"teacherId":result})
-})
-//Retrieve details of a specific room created by the teacher.
-router.get("/rooms/:roomId",async (req,res)=>{
-    const {roomId} = req.params
-    
-    const obj = await newManager.getRoom(roomId)
-    
-    
-    res.send(obj)
-
-})
-
-router.get("/dummy/:roomId",async (req,res)=>{
-    const {roomId} = req.params;
-    const ob = await newManager.dummy(roomId)
-    res.json(ob)
-})
-
-router.get("/analytics/:roomId",async (req,res)=>{
-    const {roomId} = req.params
-    const {userId} = req.cookies
-    const obj = await newManager.getRoom(roomId)
-    
-    if(obj.teacher != userId){
-        res.send("not authorized")
-        
+    if (!cookie.roomId) {
+      return res.status(400).json({ error: "Room ID not found in cookies" });
     }
-    const rs = await newManager.getAnalytics(userId,roomId)
-    console.log(rs);
-    res.json(rs)
-})
-// Update an existing room created by the teacher.
-// router.put("/rooms/:id")
 
-// Delete a room created by the teacher.
-// router.delete("/rooms/:id")
+    const result = await newManager.getTeacherQuizzes(cookie.roomId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error getting teacher quizzes:", error);
+    res.status(500).json({ error: "Failed to retrieve quizzes" });
+  }
+});
 
-module.exports=router
-// export default router
+/**
+ * POST /api/teachers/quizzes
+ * Create new quizzes
+ * Body: Array of {question, options, answer}
+ */
+router.post("/quizzes", async (req, res) => {
+  try {
+    const cookie = req.cookies;
+    const body = req.body;
+
+    if (!cookie.roomId) {
+      return res.status(400).json({ error: "Room ID not found in cookies" });
+    }
+
+    if (!Array.isArray(body) || body.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Request body must be a non-empty array of quizzes" });
+    }
+
+    const result = await newManager.addBulkQuiz(cookie.roomId, body);
+    res.json({
+      message: "Quizzes created successfully",
+      quizIds: result,
+    });
+  } catch (error) {
+    console.error("Error creating quizzes:", error);
+    res.status(500).json({ error: "Failed to create quizzes" });
+  }
+});
+
+/**
+ * POST /api/teachers/rooms
+ * Create a new room
+ * Body: {teacherName, roomId}
+ */
+router.post("/rooms", async (req, res) => {
+  try {
+    const { teacherName, roomId } = req.body;
+
+    if (!teacherName || !roomId) {
+      return res.status(400).json({
+        error: "teacherName and roomId are required",
+      });
+    }
+
+    const teacherId = await newManager.createRoom(teacherName, roomId);
+
+    res.cookie("teacherId", teacherId).cookie("roomId", roomId).json({
+      roomId: roomId,
+      teacherId: teacherId,
+      message: "Room created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating room:", error);
+    res.status(500).json({ error: "Failed to create room" });
+  }
+});
+
+/**
+ * GET /api/teachers/rooms/:roomId
+ * Retrieve details of a specific room
+ */
+router.get("/rooms/:roomId", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    if (!roomId) {
+      return res.status(400).json({ error: "Room ID is required" });
+    }
+
+    const room = await newManager.getRoom(roomId);
+
+    if (!room) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    res.json(room);
+  } catch (error) {
+    console.error("Error getting room:", error);
+    res.status(500).json({ error: "Failed to retrieve room details" });
+  }
+});
+
+/**
+ * GET /api/teachers/analytics/:roomId
+ * Get student submission analytics for a room
+ */
+router.get("/analytics/:roomId", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { teacherId } = req.cookies;
+
+    if (!teacherId) {
+      return res
+        .status(401)
+        .json({ error: "Not authorized - teacher ID not found" });
+    }
+
+    if (!roomId) {
+      return res.status(400).json({ error: "Room ID is required" });
+    }
+
+    // Get room and verify teacher
+    const room = await newManager.getRoom(roomId);
+
+    if (!room) {
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    if (room.teacherId !== teacherId) {
+      return res
+        .status(403)
+        .json({
+          error: "Not authorized - you are not the teacher of this room",
+        });
+    }
+
+    // Get analytics
+    const analytics = await newManager.getAnalytics(teacherId, roomId);
+    res.json(analytics);
+  } catch (error) {
+    console.error("Error getting analytics:", error);
+    res.status(500).json({ error: "Failed to retrieve analytics" });
+  }
+});
+
+// Future endpoints (commented for reference)
+// GET /api/teachers/quizzes/:id - Retrieve details of a specific quiz
+// PUT /api/teachers/quizzes/:id - Update an existing quiz
+// DELETE /api/teachers/quizzes/:id - Delete a quiz
+// PUT /api/teachers/rooms/:id - Update an existing room
+// DELETE /api/teachers/rooms/:id - Delete a room
+
+module.exports = router;
