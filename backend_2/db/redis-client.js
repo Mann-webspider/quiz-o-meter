@@ -1,7 +1,7 @@
 const redis = require("redis");
 
 // Get Redis configuration from environment or use defaults
-const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
+const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 
 console.log(`Redis config: ${REDIS_HOST}:${REDIS_PORT}`);

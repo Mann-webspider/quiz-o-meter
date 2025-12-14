@@ -1,6 +1,7 @@
 const { RoomModel, UserModel, QuizModel } = require("../db/redis-models");
 const Quiz = require("./Quiz");
 const User = require("./User");
+const { publishUserUpdate } = require("./socket-utils");
 
 class Rooms {
   constructor(
@@ -17,21 +18,23 @@ class Rooms {
     this.submissions = submissions;
   }
 
+  // In src/Rooms.js - addParticipant method
   static async addParticipant(username, roomId) {
     try {
-      const existingUser = await UserModel.findOne({ username, roomId });
-      if (existingUser) {
-        return existingUser.userId;
-      }
-
-      const newUser = new User(username, roomId);
-      const userId = await newUser.save();
+      const student = new User(username, roomId, "student");
+      const userId = await student.save();
       await RoomModel.addParticipant(roomId, userId);
+      
+      // Get the full user data
+      const userData = await UserModel.findById(userId);
+      await publishUserUpdate(roomId, userData, "user-joined");
+
+     
 
       return userId;
     } catch (error) {
-      console.log("Error adding participant:", error);
-      throw new Error("Failed to add participant");
+      console.error("Error adding participant:", error);
+      throw error;
     }
   }
 
@@ -45,24 +48,27 @@ class Rooms {
     }
   }
 
-  static async addBulkRoomQuiz(bulkQuiz, roomId) {
+  static async addBulkRoomQuiz(quizzes, roomId) {
     try {
       const quizIds = [];
 
-      for (const quizData of bulkQuiz) {
+      for (const quizData of quizzes) {
         const quiz = new Quiz(
           quizData.question,
-          quizData.options,
-          quizData.answer, // This should be the index as string "0", "1", "2", "3"
-          roomId
+          quizData.options || [],
+          quizData.answer,
+          roomId,
+          quizData.type || "multiple-choice", // ← Use provided type or default
+          quizData.points || 1 // ← Use provided points or default
         );
+
         const quizId = await quiz.save();
         quizIds.push(quizId);
       }
 
       return quizIds;
     } catch (error) {
-      console.log("Error adding bulk quiz:", error);
+      console.error("Error adding bulk quizzes:", error);
       throw error;
     }
   }
@@ -72,15 +78,18 @@ class Rooms {
       quizId: quiz.quizId,
       question: quiz.question,
       options: quiz.options,
+      type: quiz.type || "multiple-choice", // ← Add this
+      points: quiz.points || 1, // ← Add this
+      // Don't include 'answer' for students
     }));
   }
 
   static async checkQuizAnswerAndSubmit(userId, studentAnswers, roomId) {
     try {
       const results = [];
-      let correctCount = 0;
+      let totalPoints = 0;
+      let earnedPoints = 0;
 
-      // Process each answer
       for (const studentAnswer of studentAnswers) {
         const quiz = await Quiz.findById(studentAnswer.quizId);
 
@@ -89,40 +98,81 @@ class Rooms {
           continue;
         }
 
-        console.log("=== Answer Checking Debug ===");
-        console.log("Quiz ID:", studentAnswer.quizId);
-        console.log("Question:", quiz.question);
-        console.log("Correct Answer Index:", quiz.answer);
-        console.log("Student Answer Index:", studentAnswer.answer);
-        console.log("Quiz Options:", quiz.options);
+        totalPoints += quiz.points || 1;
+        let isCorrect = false;
+        let studentAnswerText = "";
 
-        // Compare answer indexes as strings
-        const isCorrect = String(quiz.answer) === String(studentAnswer.answer);
+        console.log("=== Answer Checking ===");
+        console.log("Question Type:", quiz.type);
+        console.log("Question:", quiz.question);
+
+        // Check based on question type
+        switch (quiz.type) {
+          case "multiple-choice":
+            // Single correct answer
+            isCorrect = String(quiz.answer) === String(studentAnswer.answer);
+            studentAnswerText = quiz.options[parseInt(studentAnswer.answer)];
+            console.log("Correct Answer:", quiz.answer);
+            console.log("Student Answer:", studentAnswer.answer);
+            break;
+
+          case "multi-select":
+            // Multiple correct answers
+            const correctAnswers = Array.isArray(quiz.answer)
+              ? quiz.answer.map(String).sort()
+              : [String(quiz.answer)].sort();
+            const studentAnswersArray = Array.isArray(studentAnswer.answer)
+              ? studentAnswer.answer.map(String).sort()
+              : [String(studentAnswer.answer)].sort();
+
+            isCorrect =
+              JSON.stringify(correctAnswers) ===
+              JSON.stringify(studentAnswersArray);
+            studentAnswerText = studentAnswersArray
+              .map((idx) => quiz.options[parseInt(idx)])
+              .join(", ");
+            console.log("Correct Answers:", correctAnswers);
+            console.log("Student Answers:", studentAnswersArray);
+            break;
+
+          case "long-answer":
+            // Manual grading required - always marked as pending
+            isCorrect = null; // null means "pending review"
+            studentAnswerText = studentAnswer.answer;
+            console.log("Long Answer Submitted:", studentAnswerText);
+            break;
+
+          default:
+            console.error("Unknown question type:", quiz.type);
+            continue;
+        }
+
+        if (isCorrect === true) {
+          earnedPoints += quiz.points || 1;
+        }
 
         console.log("Is Correct:", isCorrect);
-        console.log("===========================");
-
-        if (isCorrect) {
-          correctCount++;
-        }
+        console.log("=====================");
 
         const result = {
           quizId: quiz.quizId,
           question: quiz.question,
           options: quiz.options,
-          answer: quiz.answer, // Correct answer index
-          studentAns: quiz.options[parseInt(studentAnswer.answer)], // Convert index to actual text
+          answer: quiz.answer,
+          studentAns: studentAnswerText,
           isCorrect: isCorrect,
+          type: quiz.type,
+          points: quiz.points,
+          earnedPoints: isCorrect === true ? quiz.points : 0,
         };
 
         results.push(result);
       }
 
       // Calculate percentage
-      const totalQuestions = studentAnswers.length;
       const percentage =
-        totalQuestions > 0
-          ? `${((correctCount / totalQuestions) * 100).toFixed(2)}%`
+        totalPoints > 0
+          ? `${((earnedPoints / totalPoints) * 100).toFixed(2)}%`
           : "0.00%";
 
       // Update user submissions
@@ -132,7 +182,6 @@ class Rooms {
           submissions: results,
         });
 
-        // Publish update via Socket.io
         const updatedUser = await UserModel.findById(userId);
         if (global.io && global.io.publishUserUpdate) {
           await global.io.publishUserUpdate(
@@ -143,14 +192,20 @@ class Rooms {
         }
       }
 
+      // Count questions pending review
+      const pendingReview = results.filter((r) => r.isCorrect === null).length;
+
       return {
         results: results,
-        score: `${correctCount}/${totalQuestions}`,
+        score: `${earnedPoints}/${totalPoints}`,
         percentage: percentage,
+        pendingReview: pendingReview,
         message:
-          correctCount === totalQuestions
+          pendingReview > 0
+            ? `${pendingReview} answer(s) pending teacher review`
+            : earnedPoints === totalPoints
             ? "Perfect score! 🎉"
-            : correctCount > totalQuestions / 2
+            : earnedPoints > totalPoints / 2
             ? "Good job! 👍"
             : "Keep practicing! 💪",
       };

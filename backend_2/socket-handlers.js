@@ -6,7 +6,7 @@ function formatForTable(userData) {
   const correct = submissions.filter((dt) => dt.isCorrect === true);
 
   return {
-    id: userData.userId,
+    studentId: userData.userId, // ← Changed from 'id' to 'studentId' for consistency
     student: userData.username,
     status: submissions.length !== 0 ? "Done" : "Pending",
     marks: `${correct.length}/${submissions.length}`,
@@ -15,51 +15,6 @@ function formatForTable(userData) {
 
 function studentsTableFormat(list) {
   return list?.map((data) => formatForTable(data)) || [];
-}
-
-async function watchRoomUpdates(socket, roomId) {
-  try {
-    const subscriber = redisClient.duplicate();
-    await subscriber.connect();
-
-    const channel = `room:${roomId}:updates`;
-
-    await subscriber.subscribe(channel, (message) => {
-      try {
-        const data = JSON.parse(message);
-
-        if (data.type === "user-joined") {
-          const formatted = formatForTable(data.user);
-          socket.emit("user-insert", formatted);
-          console.log(`User joined room ${roomId}:`, formatted);
-        }
-
-        if (data.type === "user-updated") {
-          const formatted = formatForTable(data.user);
-          socket.emit("user-update", formatted);
-          console.log(`User updated in room ${roomId}:`, formatted);
-        }
-
-        // New: Quiz start event
-        if (data.type === "quiz-started") {
-          socket.emit("quiz-started", data.quizData);
-          console.log(`Quiz started in room ${roomId}`);
-        }
-      } catch (error) {
-        console.error("Error processing message:", error);
-      }
-    });
-
-    console.log(`✓ Subscribed to updates for room: ${roomId}`);
-
-    socket.on("disconnect", async () => {
-      await subscriber.unsubscribe(channel);
-      await subscriber.quit();
-      console.log(`✓ Unsubscribed from room: ${roomId}`);
-    });
-  } catch (error) {
-    console.error("Error watching room updates:", error);
-  }
 }
 
 async function getRoomParticipants(roomId) {
@@ -88,40 +43,94 @@ async function publishUserUpdate(roomId, userData, type = "user-updated") {
   }
 }
 
-async function publishQuizStart(roomId, quizData) {
-  try {
-    const channel = `room:${roomId}:updates`;
-    const message = JSON.stringify({
-      type: "quiz-started",
-      quizData,
-      timestamp: new Date().toISOString(),
-    });
-
-    await redisClient.publish(channel, message);
-    console.log(`✓ Published quiz-started to ${channel}`);
-  } catch (error) {
-    console.error("Error publishing quiz start:", error);
-  }
-}
-
 module.exports = function (io) {
+  // Store active Redis subscribers per socket
+  const subscribers = new Map();
+
   io.on("connection", async (socket) => {
     console.log("✓ Socket client connected:", socket.id);
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("✗ Socket client disconnected:", socket.id);
+
+      // Clean up Redis subscriber if exists
+      const subscriber = subscribers.get(socket.id);
+      if (subscriber) {
+        try {
+          await subscriber.quit();
+          subscribers.delete(socket.id);
+          console.log(`✓ Cleaned up Redis subscriber for ${socket.id}`);
+        } catch (err) {
+          console.error("Error cleaning up subscriber:", err);
+        }
+      }
     });
 
-    socket.on("user-IU", async (roomId) => {
-      console.log(`📡 Client watching room: ${roomId}`);
-      await watchRoomUpdates(socket, roomId);
+    // Join Socket.io room
+    socket.on("join-room", async (roomId) => {
+      socket.join(roomId);
+      console.log(`✓ Client ${socket.id} joined Socket.io room: ${roomId}`);
+
+      // Also setup Redis pub/sub for this room
+      try {
+        const subscriber = redisClient.duplicate();
+        await subscriber.connect();
+
+        const channel = `room:${roomId}:updates`;
+
+        await subscriber.subscribe(channel, (message) => {
+          try {
+            const data = JSON.parse(message);
+
+            if (data.type === "user-joined") {
+              const formatted = formatForTable(data.user);
+              socket.emit("user-insert", formatted);
+              console.log(`📢 User joined room ${roomId}:`, formatted);
+            }
+
+            if (data.type === "user-updated") {
+              const formatted = formatForTable(data.user);
+              socket.emit("user-update", formatted);
+              console.log(`📢 User updated in room ${roomId}:`, formatted);
+            }
+          } catch (error) {
+            console.error("Error processing Redis message:", error);
+          }
+        });
+
+        // Store subscriber for cleanup
+        subscribers.set(socket.id, subscriber);
+
+        console.log(`✓ Subscribed to Redis updates for room: ${roomId}`);
+      } catch (error) {
+        console.error("Error setting up Redis subscription:", error);
+      }
     });
 
+    // Leave Socket.io room
+    socket.on("leave-room", async (roomId) => {
+      socket.leave(roomId);
+      console.log(`✓ Client ${socket.id} left room: ${roomId}`);
+
+      // Clean up Redis subscriber
+      const subscriber = subscribers.get(socket.id);
+      if (subscriber) {
+        try {
+          await subscriber.quit();
+          subscribers.delete(socket.id);
+        } catch (err) {
+          console.error("Error unsubscribing:", err);
+        }
+      }
+    });
+
+    // Get current participants
     socket.on("user", async (roomId) => {
       console.log(`📋 Client requested participants for room: ${roomId}`);
 
       try {
         const participants = await getRoomParticipants(roomId);
+        console.log(`📤 Sending ${participants.length} participants to client`);
         socket.emit("user", participants);
       } catch (error) {
         console.error("Error getting participants:", error);
@@ -129,28 +138,21 @@ module.exports = function (io) {
       }
     });
 
-    socket.on("join-room", (roomId) => {
-      socket.join(roomId);
-      console.log(`✓ Client ${socket.id} joined room: ${roomId}`);
-    });
+    // REMOVED: user-IU event (redundant with join-room)
 
-    socket.on("leave-room", (roomId) => {
-      socket.leave(roomId);
-      console.log(`✓ Client ${socket.id} left room: ${roomId}`);
-    });
-
-    // New: Start quiz event from teacher
+    // Start quiz - broadcast to all in Socket.io room
     socket.on("start-quiz", async ({ roomId, quizData }) => {
-      console.log(`🚀 Teacher starting quiz in room: ${roomId}`);
+      console.log(
+        `🚀 Teacher starting quiz in room: ${roomId} with ${quizData.length} questions`
+      );
 
-      // Broadcast to all students in the room
+      // Broadcast to everyone in the Socket.io room
       io.to(roomId).emit("quiz-started", quizData);
 
-      // Also publish to Redis for any new connections
-      await publishQuizStart(roomId, quizData);
+      console.log(`✓ Broadcasted quiz-started to room ${roomId}`);
     });
 
-    // New: Track student question timing
+    // Track student question timing
     socket.on(
       "question-time",
       async ({ roomId, userId, quizId, timeSpent }) => {
@@ -158,7 +160,6 @@ module.exports = function (io) {
           `⏱️ User ${userId} spent ${timeSpent}s on question ${quizId}`
         );
 
-        // Store timing data in Redis
         try {
           const key = `timing:${userId}:${quizId}`;
           await redisClient.set(key, timeSpent.toString());
@@ -170,6 +171,6 @@ module.exports = function (io) {
     );
   });
 
+  // Export helper functions
   io.publishUserUpdate = publishUserUpdate;
-  io.publishQuizStart = publishQuizStart;
 };

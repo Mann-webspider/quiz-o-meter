@@ -5,6 +5,7 @@ import api from "../utils/axios";
 import socket from "../utils/socket";
 import Button from "../components/Button";
 import RadioGroup from "../components/Radio-group";
+import QuestionRenderer from "../components/student/QuestionRenderer";
 
 function QuizLive() {
   const [cookies] = useCookies(["roomId", "userId"]);
@@ -26,6 +27,8 @@ function QuizLive() {
         const res = await api.get(
           `http://localhost:3001/api/students/rooms/${cookies.roomId}`
         );
+        console.log(res.data);
+        
         setQuizzes(res.data);
         if (res.data.length > 0) {
           currentQuizIdRef.current = res.data[0].quizId;
@@ -240,19 +243,16 @@ function QuizLive() {
 
           {/* Options using your RadioGroup component */}
           <div className="mb-12">
-            <RadioGroup
-              options={currentQuiz.options}
-              id={currentQuiz.quizId}
-              register={(name) => ({
-                name,
-                onChange: (e) => {
-                  setAnswers((prev) => ({
-                    ...prev,
-                    [currentQuiz.quizId]: e.target.value,
-                  }));
-                },
-                value: answers[currentQuiz.quizId],
-              })}
+            <QuestionRenderer
+              quiz={currentQuiz} // ✅ Correct - matches component prop
+              answer={answers[currentQuiz.quizId]}
+              onAnswerChange={(quizId, answer) => {
+                // ✅ Correct - matches component prop
+                setAnswers((prev) => ({
+                  ...prev,
+                  [quizId]: answer,
+                }));
+              }}
             />
           </div>
 

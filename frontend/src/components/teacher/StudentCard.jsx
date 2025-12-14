@@ -35,7 +35,7 @@ function StudentCard({ student, onViewDetails }) {
           {student.status === "Done" && (
             <Button
               text="View Details"
-              click={() => onViewDetails(student.id)}
+              click={() => onViewDetails(student.studentId)}
             />
           )}
         </div>

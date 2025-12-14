@@ -13,7 +13,8 @@ router.get("/quizzes", async (req, res) => {
     if (!cookie.roomId) {
       return res.status(400).json({ error: "Room ID not found in cookies" });
     }
-
+    console.log("router cookie roomid",cookie.roomId);
+    
     const result = await newManager.getTeacherQuizzes(cookie.roomId);
     res.json(result);
   } catch (error) {
@@ -70,16 +71,29 @@ router.post("/rooms", async (req, res) => {
 
     const teacherId = await newManager.createRoom(teacherName, roomId);
 
-    res.cookie("teacherId", teacherId).cookie("roomId", roomId).json({
-      roomId: roomId,
-      teacherId: teacherId,
-      message: "Room created successfully",
-    });
+    // Set cookies with proper options
+    const cookieOptions = {
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: false, // Allow JavaScript access
+      sameSite: "lax",
+      path: "/",
+    };
+
+    res
+      .cookie("teacherId", teacherId, cookieOptions)
+      .cookie("roomId", roomId, cookieOptions)
+      .cookie("teacherName", teacherName, cookieOptions) // Add teacher name
+      .json({
+        roomId: roomId,
+        teacherId: teacherId, // ← Add this to response body
+        message: "Room created successfully",
+      });
   } catch (error) {
     console.error("Error creating room:", error);
     res.status(500).json({ error: "Failed to create room" });
   }
 });
+
 
 /**
  * GET /api/teachers/rooms/:roomId
@@ -131,7 +145,9 @@ router.get("/analytics/:roomId", async (req, res) => {
     if (!room) {
       return res.status(404).json({ error: "Room not found" });
     }
-
+    console.log("room teacher id", room.teacherId);
+    console.log("teacherid", teacherId);
+    
     if (room.teacherId !== teacherId) {
       return res
         .status(403)

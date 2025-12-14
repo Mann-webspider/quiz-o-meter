@@ -1,372 +1,329 @@
-const { redisClient, redisHelpers } = require("./redis-client");
+const { redisClient } = require("./redis-client");
 
 class UserModel {
-  static async create({ username, role = "student", roomId }) {
-    const userId = await redisHelpers.generateId("user");
-    const timestamp = new Date().toISOString();
+  static async create(userData) {
+    try {
+      // Generate userId if not provided
+      const userId =
+        userData.userId ||
+        `user_${userData.role === "teacher" ? 1 : 2}_${Date.now()}`;
 
-    await redisClient.hSet(`user:${userId}`, {
-      userId,
-      username,
-      role,
-      roomId: roomId || "",
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
+      const key = `user:${userId}`;
 
-    if (roomId) {
-      await redisClient.sAdd(`user:room:${roomId}`, userId);
+      // Serialize submissions array to JSON
+      const dataToStore = {
+        userId: userId, // ← Make sure userId is stored
+        username: String(userData.username),
+        roomId: String(userData.roomId),
+        role: String(userData.role || "student"),
+        submissions: JSON.stringify(userData.submissions || []),
+      };
+
+      console.log("Creating user:", dataToStore); // Debug log
+
+      await redisClient.hSet(key, dataToStore);
+      return userId; // ← Return the userId
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
     }
-
-    return userId;
   }
 
   static async findById(userId) {
-    const exists = await redisClient.exists(`user:${userId}`);
-    if (!exists) return null;
-
-    const userData = await redisClient.hGetAll(`user:${userId}`);
-
-    const submissions = await redisClient.lRange(
-      `user:${userId}:submissions`,
-      0,
-      -1
-    );
-    userData.submissions = submissions.map((s) => JSON.parse(s));
-
-    return userData;
-  }
-
-  static async findOne(criteria) {
-    const userKeys = await redisClient.keys("user:user_*");
-
-    for (const key of userKeys) {
+    try {
+      const key = `user:${userId}`;
       const userData = await redisClient.hGetAll(key);
 
-      let match = true;
-      for (const [field, value] of Object.entries(criteria)) {
-        if (userData[field] !== value) {
-          match = false;
-          break;
+      if (!userData || Object.keys(userData).length === 0) {
+        return null;
+      }
+
+      // Parse submissions back to array
+      return {
+        ...userData,
+        submissions: userData.submissions
+          ? JSON.parse(userData.submissions)
+          : [],
+      };
+    } catch (error) {
+      console.error("Error finding user:", error);
+      return null;
+    }
+  }
+
+  static async findOne(query) {
+    try {
+      const pattern = `user:*`;
+      const keys = await redisClient.keys(pattern);
+
+      for (const key of keys) {
+        const userData = await redisClient.hGetAll(key);
+
+        let matches = true;
+        for (const [field, value] of Object.entries(query)) {
+          if (userData[field] !== value) {
+            matches = false;
+            break;
+          }
+        }
+
+        if (matches) {
+          return {
+            ...userData,
+            submissions: userData.submissions
+              ? JSON.parse(userData.submissions)
+              : [],
+          };
         }
       }
 
-      if (match) {
-        const userId = userData.userId;
-        const submissions = await redisClient.lRange(
-          `user:${userId}:submissions`,
-          0,
-          -1
-        );
-        userData.submissions = submissions.map((s) => JSON.parse(s));
-        return userData;
-      }
+      return null;
+    } catch (error) {
+      console.error("Error finding user:", error);
+      return null;
     }
-
-    return null;
   }
 
-  static async addSubmission(userId, submission) {
-    submission.createdAt = new Date().toISOString();
-    await redisClient.rPush(
-      `user:${userId}:submissions`,
-      JSON.stringify(submission)
-    );
-    await redisClient.hSet(
-      `user:${userId}`,
-      "updatedAt",
-      new Date().toISOString()
-    );
-  }
+  static async update(userId, updates) {
+    try {
+      const key = `user:${userId}`;
+      // Serialize submissions if present
+      const dataToUpdate = {
+        ...updates,
+        submissions: updates.submissions
+          ? JSON.stringify(updates.submissions)
+          : undefined,
+      };
 
-  static async updateSubmissions(userId, submissions) {
-    await redisClient.del(`user:${userId}:submissions`);
+      // Remove undefined values
+      Object.keys(dataToUpdate).forEach(
+        (k) => dataToUpdate[k] === undefined && delete dataToUpdate[k]
+      );
 
-    if (submissions && submissions.length > 0) {
-      const submissionsJSON = submissions.map((s) => JSON.stringify(s));
-      await redisClient.rPush(`user:${userId}:submissions`, submissionsJSON);
+      await redisClient.hSet(key, dataToUpdate);
+      return true;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
     }
-
-    await redisClient.hSet(
-      `user:${userId}`,
-      "updatedAt",
-      new Date().toISOString()
-    );
-  }
-
-  static async findByRoom(roomId) {
-    const userIds = await redisClient.sMembers(`user:room:${roomId}`);
-    const users = [];
-
-    for (const userId of userIds) {
-      const user = await this.findById(userId);
-      if (user) users.push(user);
-    }
-
-    return users;
-  }
-}
-
-class QuizModel {
-  static async create({ question, options, answer, roomId }) {
-    const quizId = await redisHelpers.generateId("quiz");
-    const timestamp = new Date().toISOString();
-
-    await redisClient.hSet(`quiz:${quizId}`, {
-      quizId,
-      question,
-      answer,
-      roomId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
-
-    if (options && options.length > 0) {
-      await redisClient.rPush(`quiz:${quizId}:options`, options);
-    }
-
-    await redisClient.sAdd(`quiz:room:${roomId}`, quizId);
-
-    return quizId;
-  }
-
-  static async createMany(quizzesData) {
-    const quizIds = [];
-    for (const quizData of quizzesData) {
-      const quizId = await this.create(quizData);
-      quizIds.push(quizId);
-    }
-    return quizIds;
-  }
-
-  static async findById(quizId) {
-    const exists = await redisClient.exists(`quiz:${quizId}`);
-    if (!exists) return null;
-
-    const quizData = await redisClient.hGetAll(`quiz:${quizId}`);
-    quizData.options = await redisClient.lRange(
-      `quiz:${quizId}:options`,
-      0,
-      -1
-    );
-
-    return quizData;
-  }
-
-  static async findByRoom(roomId) {
-    const quizIds = await redisClient.sMembers(`quiz:room:${roomId}`);
-    const quizzes = [];
-
-    for (const quizId of quizIds) {
-      const quiz = await this.findById(quizId);
-      if (quiz) quizzes.push(quiz);
-    }
-
-    return quizzes;
-  }
-
-  static async findOne(criteria) {
-    const quizKeys = await redisClient.keys("quiz:quiz_*");
-
-    for (const key of quizKeys) {
-      if (key.includes(":options")) continue;
-
-      const quizData = await redisClient.hGetAll(key);
-
-      let match = true;
-      for (const [field, value] of Object.entries(criteria)) {
-        if (quizData[field] !== value) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match) {
-        const quizId = quizData.quizId;
-        quizData.options = await redisClient.lRange(
-          `quiz:${quizId}:options`,
-          0,
-          -1
-        );
-        return quizData;
-      }
-    }
-
-    return null;
   }
 }
 
 class RoomModel {
-  static async create({ roomId, teacherId }) {
-    const timestamp = new Date().toISOString();
+  static async create(roomData) {
+    try {
+      const key = `room:${roomData.roomId}`;
+      const dataToStore = {
+        roomId: String(roomData.roomId),
+        teacherId: String(roomData.teacherId),
+        teacherName: String(roomData.teacherName || ""),
+        participants: JSON.stringify(roomData.participants || []),
+        createdAt: roomData.createdAt
+          ? roomData.createdAt instanceof Date
+            ? roomData.createdAt.toISOString()
+            : String(roomData.createdAt)
+          : new Date().toISOString(),
+        status: String(roomData.status || "draft"),
+      };
 
-    // Check if room already exists
-    const exists = await redisClient.exists(`room:${roomId}`);
-    if (exists) {
-      throw new Error(`Room ${roomId} already exists`);
+      console.log("Creating room with data:", dataToStore);
+      await redisClient.hSet(key, dataToStore);
+      return roomData.roomId;
+    } catch (error) {
+      console.error("Error creating room:", error);
+      throw error;
     }
-
-    // Store room data as hash
-    await redisClient.hSet(`room:${roomId}`, {
-      roomId,
-      teacherId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
-
-    // Initialize empty participants set (don't add teacher to participants)
-    // The participants set will be populated when users join
-
-    return roomId;
   }
 
   static async findById(roomId) {
-    const exists = await redisClient.exists(`room:${roomId}`);
-    if (!exists) return null;
-
-    const roomData = await redisClient.hGetAll(`room:${roomId}`);
-
-    // Check if participants set exists, if not create empty set
-    const participantsExists = await redisClient.exists(
-      `room:${roomId}:participants`
-    );
-    if (participantsExists) {
-      roomData.participants = await redisClient.sMembers(
-        `room:${roomId}:participants`
-      );
-    } else {
-      roomData.participants = [];
-    }
-
-    // Check if quizzes set exists
-    const quizzesExists = await redisClient.exists(`room:${roomId}:quizzes`);
-    if (quizzesExists) {
-      roomData.quizzes = await redisClient.sMembers(`room:${roomId}:quizzes`);
-    } else {
-      roomData.quizzes = [];
-    }
-
-    return roomData;
-  }
-
-  static async findOne(criteria) {
-    if (criteria.roomId) {
-      return await this.findById(criteria.roomId);
-    }
-
-    const roomKeys = await redisClient.keys("room:*");
-
-    for (const key of roomKeys) {
-      if (key.includes(":participants") || key.includes(":quizzes")) continue;
-
+    try {
+      const key = `room:${roomId}`;
       const roomData = await redisClient.hGetAll(key);
 
-      let match = true;
-      for (const [field, value] of Object.entries(criteria)) {
-        if (roomData[field] !== value) {
-          match = false;
-          break;
-        }
+      if (!roomData || Object.keys(roomData).length === 0) {
+        return null;
       }
 
-      if (match) {
-        const roomId = roomData.roomId;
-        const participantsExists = await redisClient.exists(
-          `room:${roomId}:participants`
-        );
-        if (participantsExists) {
-          roomData.participants = await redisClient.sMembers(
-            `room:${roomId}:participants`
-          );
-        } else {
-          roomData.participants = [];
-        }
-
-        const quizzesExists = await redisClient.exists(
-          `room:${roomId}:quizzes`
-        );
-        if (quizzesExists) {
-          roomData.quizzes = await redisClient.sMembers(
-            `room:${roomId}:quizzes`
-          );
-        } else {
-          roomData.quizzes = [];
-        }
-
-        return roomData;
-      }
+      return {
+        ...roomData,
+        participants: roomData.participants
+          ? JSON.parse(roomData.participants)
+          : [],
+      };
+    } catch (error) {
+      console.error("Error finding room:", error);
+      return null;
     }
-
-    return null;
   }
 
   static async addParticipant(roomId, userId) {
-    // Ensure the room exists
-    const roomExists = await redisClient.exists(`room:${roomId}`);
-    if (!roomExists) {
-      throw new Error(`Room ${roomId} does not exist`);
+    try {
+      const room = await this.findById(roomId);
+      if (!room) {
+        throw new Error("Room not found");
+      }
+
+      const participants = room.participants || [];
+      if (!participants.includes(userId)) {
+        participants.push(userId);
+        await redisClient.hSet(`room:${roomId}`, {
+          participants: JSON.stringify(participants),
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error adding participant:", error);
+      throw error;
     }
-
-    // Add user to participants set
-    await redisClient.sAdd(`room:${roomId}:participants`, userId);
-    await redisClient.hSet(
-      `room:${roomId}`,
-      "updatedAt",
-      new Date().toISOString()
-    );
-  }
-
-  static async addQuiz(roomId, quizId) {
-    await redisClient.sAdd(`room:${roomId}:quizzes`, quizId);
-    await redisClient.hSet(
-      `room:${roomId}`,
-      "updatedAt",
-      new Date().toISOString()
-    );
   }
 
   static async getParticipantsWithDetails(roomId) {
-    const participantsExists = await redisClient.exists(
-      `room:${roomId}:participants`
-    );
-    if (!participantsExists) {
+    try {
+      const room = await this.findById(roomId);
+      if (!room) {
+        return [];
+      }
+
+      const participants = room.participants || [];
+      const participantDetails = [];
+
+      for (const userId of participants) {
+        const user = await UserModel.findById(userId);
+        if (user) {
+          participantDetails.push(user);
+        }
+      }
+
+      return participantDetails;
+    } catch (error) {
+      console.error("Error getting participant details:", error);
       return [];
     }
+  }
+  
+}
 
-    const participantIds = await redisClient.sMembers(
-      `room:${roomId}:participants`
-    );
-    const participants = [];
+class QuizModel {
+  static async create(quizData) {
+    try {
+      const key = `quiz:${quizData.quizId}`;
 
-    for (const userId of participantIds) {
-      const user = await UserModel.findById(userId);
-      if (user) participants.push(user);
+      // Serialize complex data types
+      const dataToStore = {
+        quizId: quizData.quizId,
+        question: quizData.question,
+        roomId: quizData.roomId,
+        type: quizData.type || "multiple-choice",
+        points: String(quizData.points || 1),
+        // Serialize arrays/objects to JSON
+        options: quizData.options ? JSON.stringify(quizData.options) : null,
+        answer: Array.isArray(quizData.answer)
+          ? JSON.stringify(quizData.answer)
+          : String(quizData.answer || ""),
+      };
+
+      console.log("Storing quiz in Redis:", dataToStore);
+
+      await redisClient.hSet(key, dataToStore);
+
+      // Add to room's quiz list
+      const roomQuizKey = `room:${quizData.roomId}:quizzes`;
+      await redisClient.sAdd(roomQuizKey, quizData.quizId);
+
+      return quizData.quizId;
+    } catch (error) {
+      console.error("Error creating quiz:", error);
+      throw error;
     }
+  }
 
-    return participants;
+  static async findById(quizId) {
+    try {
+      const key = `quiz:${quizId}`;
+      const quizData = await redisClient.hGetAll(key);
+
+      if (!quizData || Object.keys(quizData).length === 0) {
+        return null;
+      }
+
+      // Parse stored data back to original format
+      return {
+        quizId: quizData.quizId,
+        question: quizData.question,
+        roomId: quizData.roomId,
+        type: quizData.type || "multiple-choice",
+        points: parseInt(quizData.points) || 1,
+        options: quizData.options ? JSON.parse(quizData.options) : null,
+        // Handle both single answer and array of answers
+        answer: quizData.answer
+          ? quizData.answer.startsWith("[")
+            ? JSON.parse(quizData.answer)
+            : quizData.answer
+          : null,
+      };
+    } catch (error) {
+      console.error("Error finding quiz:", error);
+      return null;
+    }
+  }
+
+  static async findByRoomId(roomId) {
+    try {
+      const roomQuizKey = `room:${roomId}:quizzes`;
+      const quizIds = await redisClient.sMembers(roomQuizKey);
+
+      const quizzes = [];
+      for (const quizId of quizIds) {
+        const quiz = await this.findById(quizId);
+        if (quiz) {
+          quizzes.push(quiz);
+        }
+      }
+
+      return quizzes;
+    } catch (error) {
+      console.error("Error finding quizzes by room:", error);
+      return [];
+    }
   }
 }
 
 class QuizManagerModel {
   static async create(roomId) {
-    await redisClient.set(`quizmanager:${roomId}`, roomId);
-    return roomId;
+    try {
+      const key = `quizmanager:${roomId}`;
+      await redisClient.hSet(key, {
+        roomId,
+        createdAt: new Date().toISOString(),
+      });
+      return roomId;
+    } catch (error) {
+      console.error("Error creating quiz manager:", error);
+      throw error;
+    }
   }
 
-  static async findOne({ roomId }) {
-    const exists = await redisClient.exists(`quizmanager:${roomId}`);
-    if (!exists) return null;
+  static async findById(roomId) {
+    try {
+      const key = `quizmanager:${roomId}`;
+      const data = await redisClient.hGetAll(key);
 
-    return {
-      roomId,
-      roomObj: roomId,
-    };
+      if (!data || Object.keys(data).length === 0) {
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error finding quiz manager:", error);
+      return null;
+    }
   }
 }
 
 module.exports = {
   UserModel,
-  QuizModel,
   RoomModel,
+  QuizModel,
   QuizManagerModel,
 };

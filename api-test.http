@@ -21,7 +21,7 @@ Content-Type: application/json
 
 ### 2. Get Teacher's Quizzes
 GET {{baseUrl}}/api/teachers/quizzes
-Cookie: roomId={{roomId}}; teacherId=user_1_1234567890
+Cookie: roomId= 999999;
 
 ### 3. Add Quizzes (Teacher)
 POST {{baseUrl}}/api/teachers/quizzes
@@ -47,17 +47,17 @@ Cookie: roomId={{roomId}}; teacherId=user_1_1234567890
 ]
 
 ### 4. Get Room Details (Teacher)
-GET {{baseUrl}}/api/teachers/rooms/{{roomId}}
+GET {{baseUrl}}/api/teachers/rooms/999999
 
 ### 5. Get Analytics (Teacher)
-GET {{baseUrl}}/api/teachers/analytics/{{roomId}}
-Cookie: teacherId=user_1_1234567890
+GET {{baseUrl}}/api/teachers/analytics/999999
+Cookie: teacherId=user_1_1765660398548
 
 ### ==================== STUDENT ENDPOINTS ====================
 
 ### 6. Join Room (Student)
 # @name joinRoom
-POST {{baseUrl}}/api/students/rooms/{{roomId}}
+POST {{baseUrl}}/api/students/rooms/555555
 Content-Type: application/json
 
 {

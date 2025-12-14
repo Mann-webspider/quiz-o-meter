@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import TextStroke from "../components/TextStroke";
-import OtpInput from "../components/Otp";
-import Button from "../components/Button";
-import api from "../utils/axios";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
+import api from "../utils/axios";
+import OtpInput from "../components/Otp";
+import Button from "../components/Button";
+import TextStroke from "src/components/TextStroke";
 
 function CreateRoom() {
-  const navigate = useNavigate();
-  const [cookie, setCookie] = useCookies();
   const [form, setForm] = useState({ teacherName: "", roomId: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const [cookies, setCookie] = useCookies([
+    "teacherId",
+    "roomId",
+    "teacherName",
+  ]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -21,16 +25,29 @@ function CreateRoom() {
     try {
       console.log("Creating room:", form);
 
-      const res = await api.post(
-        "http://localhost:3001/api/teachers/rooms",
-        form
-      );
+      const res = await api.post("http://localhost:3001/api/teachers/rooms", {
+        teacherName: form.teacherName,
+        roomId: form.roomId,
+      });
 
       console.log("Room created:", res.data);
 
-      // Set cookies
-      setCookie("roomId", res.data.roomId);
-      setCookie("teacherId", res.data.teacherId);
+      // Set cookies with options
+      const cookieOptions = {
+        path: "/",
+        maxAge: 24 * 60 * 60, // 24 hours in seconds
+        sameSite: "lax",
+      };
+
+      setCookie("teacherId", res.data.teacherId, cookieOptions);
+      setCookie("roomId", res.data.roomId, cookieOptions);
+      setCookie("teacherName", form.teacherName, cookieOptions);
+
+      console.log("Cookies set:", {
+        teacherId: res.data.teacherId,
+        roomId: res.data.roomId,
+        teacherName: form.teacherName,
+      });
 
       // Navigate to teacher dashboard
       navigate("/teacher");

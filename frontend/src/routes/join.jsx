@@ -11,7 +11,7 @@ function Join() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigation = useNavigate();
-  const [cookie, setCookie] = useCookies();
+  const [cookies, setCookie] = useCookies(["userId", "roomId", "username"]); // Add username
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -21,20 +21,37 @@ function Join() {
     try {
       console.log("Joining room:", form);
 
-      // Updated API call - removed baseUrl typo
+      // Use the api instance instead of hardcoded URL
       const res = await api.post(
         `http://localhost:3001/api/students/rooms/${form.roomId}`,
-        { username: form.username }
+        {
+          username: form.username,
+        }
       );
 
       console.log("Join response:", res.data);
 
-      // Set cookies from response
-      setCookie("userId", res.data.userId);
-      setCookie("roomId", res.data.roomId);
+      // Set cookies with proper options
+      const cookieOptions = {
+        path: "/",
+        maxAge: 24 * 60 * 60, // 24 hours in seconds
+        sameSite: "lax",
+      };
 
-      // Navigate to quiz
-      navigation("/waiting");
+      setCookie("userId", res.data.userId, cookieOptions);
+      setCookie("roomId", res.data.roomId, cookieOptions);
+      setCookie("username", form.username, cookieOptions); // Store username too
+
+      console.log("Cookies set:", {
+        userId: res.data.userId,
+        roomId: res.data.roomId,
+        username: form.username,
+      });
+
+      // Small delay to ensure cookies are set
+      setTimeout(() => {
+        navigation("/waiting");
+      }, 100);
     } catch (err) {
       console.error("Error joining room:", err);
       setError(
@@ -82,6 +99,7 @@ function Join() {
           <OtpInput
             length={6}
             onOtpSubmit={(val) => {
+              console.log("Room ID entered:", val);
               setForm({ ...form, roomId: val });
             }}
           />
@@ -91,7 +109,7 @@ function Join() {
           <Button
             text={loading ? "Joining..." : "Let's Go"}
             click={onSubmit}
-            disabled={loading || !form.username || !form.roomId}
+            disabled={loading || !form.username || form.roomId.length !== 6}
           />
         </div>
       </div>

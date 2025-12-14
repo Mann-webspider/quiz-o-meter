@@ -24,8 +24,22 @@ class QuizManager {
       const teacher = new User(teacherName, roomId, "teacher");
       const teacherId = await teacher.save();
 
-      // Create room
-      await RoomModel.create({ teacherId, roomId });
+      console.log("Teacher created with ID:", teacherId); // Debug log
+
+      // Verify teacherId is valid
+      if (!teacherId) {
+        throw new Error("Failed to create teacher - no userId returned");
+      }
+
+      // Create room with all required fields as strings
+      await RoomModel.create({
+        teacherId: String(teacherId),
+        roomId: String(roomId),
+        teacherName: String(teacherName),
+        participants: [],
+        status: "draft",
+        createdAt: new Date().toISOString(),
+      });
 
       // Create quiz manager entry
       await QuizManagerModel.create(roomId);
@@ -131,7 +145,11 @@ class QuizManager {
   async getTeacherQuizzes(roomId) {
     try {
       // Find all quizzes with answers
+      console.log("room id",roomId);
+      
       const quizzes = await Quiz.findByRoom(roomId);
+      console.log(quizzes);
+      
       return quizzes.map((q) => q.toObject());
     } catch (error) {
       console.log("Error getting teacher quizzes:", error);
@@ -198,6 +216,17 @@ class QuizManager {
       return allSubmissions;
     } catch (error) {
       console.log("Error getting analytics:", error);
+      return [];
+    }
+  }
+
+  // getRoomParticipants
+  async getRoomParticipants(roomId) {
+    try {
+      const participants = await RoomModel.getParticipantsWithDetails(roomId);
+      return participants;
+    } catch (error) {
+      console.log("Error getting room participants:", error);
       return [];
     }
   }

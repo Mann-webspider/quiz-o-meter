@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const QuizManager = require("../src/QuizManager");
-
-const qm = new QuizManager();
+const { newManager } = require("../init"); // Use shared instance
 
 // Join room
 router.post("/rooms/:roomId", async (req, res) => {
@@ -14,7 +12,7 @@ router.post("/rooms/:roomId", async (req, res) => {
       return res.status(400).json({ error: "Username is required" });
     }
 
-    const userId = await qm.addStudent(username, roomId);
+    const userId = await newManager.addStudent(username, roomId);
 
     // Set cookies
     res.cookie("userId", userId, { maxAge: 24 * 60 * 60 * 1000 });
@@ -35,7 +33,7 @@ router.post("/rooms/:roomId", async (req, res) => {
 router.get("/rooms/:roomId", async (req, res) => {
   try {
     const { roomId } = req.params;
-    const quizzes = await qm.getQuizzes(roomId);
+    const quizzes = await newManager.getQuizzes(roomId);
     res.json(quizzes);
   } catch (error) {
     console.error("Error getting quizzes:", error);
@@ -74,7 +72,7 @@ router.post("/rooms/quizzes/answers", async (req, res) => {
       }
     }
 
-    const result = await qm.checkManagerQuizAnswer(
+    const result = await newManager.checkManagerQuizAnswer(
       userId,
       roomId,
       studentAnswers
@@ -86,6 +84,18 @@ router.post("/rooms/quizzes/answers", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("Error submitting answers:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// room participant list
+router.get("/rooms/:roomId/participants", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const participants = await newManager.getStudentName(roomId); // Use correct method name
+    res.json(participants);
+  } catch (error) {
+    console.error("Error getting participants:", error);
     res.status(500).json({ error: error.message });
   }
 });
