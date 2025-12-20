@@ -1,4 +1,5 @@
-import Avatar, { genConfig } from 'react-nice-avatar'
-const config = genConfig()
+import { genConfig } from "react-nice-avatar";
 
-export default config
+const config = genConfig();
+
+export default config;

@@ -1,11 +1,9 @@
+.stroke {
+	-webkit-text-stroke-width: 1px;
+	-webkit-text-stroke-color: #000;
 
-
-  .stroke{
-    -webkit-text-stroke-width: 1px;
-    -webkit-text-stroke-color: #000;
-    
-    position: absolute;
-    top:2px;
-    left:2px;
-    z-index: -5;
-  }
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	z-index: -5;
+}
