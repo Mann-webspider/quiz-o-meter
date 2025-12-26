@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-EXPOSE 3001
+EXPOSE 8080
 
 # Development mode with hot reload
 CMD ["pnpm", "run", "start"]
