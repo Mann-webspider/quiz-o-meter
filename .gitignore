@@ -1,1 +1,5 @@
 /node_modules
+/frontend/.env.local
+/backend_2/.env
+.github/
+.vscode/

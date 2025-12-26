@@ -9,9 +9,10 @@ import QuestionList from "../components/teacher/QuestionList";
 import StatsBar from "../components/teacher/StatsBar";
 import StudentCard from "../components/teacher/StudentCard";
 import StudentDetailModal from "../components/teacher/StudentDetailModal";
-import config from "../utils/avatar";
+import cfg from "../utils/avatar" ;
 import api from "../utils/axios";
 import socket from "../utils/socket";
+import config from "../config";
 
 function Teacher() {
 	const [ques, setQues] = useState([]);
@@ -104,7 +105,7 @@ function Teacher() {
 				console.log("Fetching existing questions for room:", cookies.roomId);
 
 				const res = await api.get(
-					"http://localhost:3001/api/teachers/quizzes",
+					`${config.BACKEND_URL}/api/teachers/quizzes`,
 					{ withCredentials: true },
 				);
 
@@ -150,7 +151,7 @@ function Teacher() {
 		setError("");
 
 		try {
-			await api.post("http://localhost:3001/api/teachers/quizzes", ques, {
+			await api.post(`${config.BACKEND_URL}/api/teachers/quizzes`, ques, {
 				withCredentials: true,
 			});
 			console.log("Quiz published successfully");
@@ -173,7 +174,7 @@ function Teacher() {
 		if (!window.confirm(`Start quiz for ${dataS.length} student(s)?`)) return;
 
 		try {
-			const res = await api.get("http://localhost:3001/api/teachers/quizzes", {
+			const res = await api.get(`${config.BACKEND_URL}/api/teachers/quizzes`, {
 				withCredentials: true,
 			});
 
@@ -194,7 +195,7 @@ function Teacher() {
 	const handleViewStudent = async (studentId) => {
 		try {
 			const res = await api.get(
-				`http://localhost:3001/api/teachers/analytics/${cookies.roomId}`,
+				`${config.BACKEND_URL}/api/teachers/analytics/${cookies.roomId}`,
 				{ withCredentials: true },
 			);
 			console.log("student deatils", res.data);
@@ -242,7 +243,7 @@ function Teacher() {
 						</p>
 						<p className="font-mono font-bold text-xl">{cookies.roomId}</p>
 					</div>
-					<Avatar style={{ width: "5rem", height: "5rem" }} {...config} />
+					<Avatar style={{ width: "5rem", height: "5rem" }} {...cfg} />
 				</div>
 			</nav>
 

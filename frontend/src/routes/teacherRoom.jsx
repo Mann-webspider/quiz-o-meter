@@ -5,13 +5,14 @@ import TextStroke from "src/components/TextStroke";
 import Button from "../components/Button";
 import OtpInput from "../components/Otp";
 import api from "../utils/axios";
+import config from "../config"
 
 function CreateRoom() {
 	const [form, setForm] = useState({ teacherName: "", roomId: "" });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
-	const [setCookie] = useCookies(["teacherId", "roomId", "teacherName"]);
+	const [_cookies, setCookie, _removeCookie] = useCookies(["teacherId", "roomId", "teacherName"]);
 
 	const onSubmit = async (e) => {
 		e.preventDefault();
@@ -21,7 +22,7 @@ function CreateRoom() {
 		try {
 			console.log("Creating room:", form);
 
-			const res = await api.post("http://localhost:3001/api/teachers/rooms", {
+			const res = await api.post(`${config.BACKEND_URL}/api/teachers/rooms`, {
 				teacherName: form.teacherName,
 				roomId: form.roomId,
 			});
@@ -34,7 +35,8 @@ function CreateRoom() {
 				maxAge: 24 * 60 * 60, // 24 hours in seconds
 				sameSite: "lax",
 			};
-
+			console.log(res.data);
+			
 			setCookie("teacherId", res.data.teacherId, cookieOptions);
 			setCookie("roomId", res.data.roomId, cookieOptions);
 			setCookie("teacherName", form.teacherName, cookieOptions);

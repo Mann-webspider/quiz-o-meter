@@ -84,7 +84,7 @@ function QuestionForm({ register, onSubmit, answerValue, watch, setValue }) {
 						<div name="correct-answer">
 							<label
 								className="block text-sm font-medium mb-4 uppercase tracking-wider text-gray-700"
-								htmlFor="correct-answer"
+								
 							>
 								Correct Answer{questionType === "multi-select" ? "s" : ""}
 								{questionType === "multi-select" && (
@@ -97,26 +97,25 @@ function QuestionForm({ register, onSubmit, answerValue, watch, setValue }) {
 							{questionType === "multiple-choice" ? (
 								// Radio buttons for single choice
 								<div className="grid grid-cols-4 gap-4">
-									{["A", "B", "C", "D"].map((letter, idx) => (
-										<label
-											key={idx}
-											htmlFor="correct-answer"
-											className={`h-16 flex items-center justify-center border-2 rounded-lg cursor-pointer text-xl font-bold transition-all ${
-												answerValue === String(idx)
-													? "border-black bg-black text-white scale-105"
-													: "border-gray-300 hover:border-gray-500 hover:bg-gray-50"
-											}`}
-										>
-											<input
-												type="radio"
-												value={idx}
-												{...register("answer", { required: true })}
-												className="hidden"
-											/>
-											{letter}
-										</label>
-									))}
-								</div>
+  {["A", "B", "C", "D"].map((letter, idx) => (
+    <label
+      key={idx}
+      className={`h-16 flex items-center justify-center border-2 rounded-lg cursor-pointer text-xl font-bold transition-all ${
+        answerValue === String(idx)
+          ? "border-black bg-black text-white scale-105"
+          : "border-gray-300 hover:border-gray-500 hover:bg-gray-50"
+      }`}
+    >
+      <input
+        type="radio"
+        value={String(idx)}   // 👈 FIX
+        {...register("answer", { required: true })}
+        className="hidden"
+      />
+      {letter}
+    </label>
+  ))}
+</div>
 							) : (
 								// Checkboxes for multi-select
 								<div className="grid grid-cols-4 gap-4">

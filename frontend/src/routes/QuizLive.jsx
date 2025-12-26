@@ -6,7 +6,7 @@ import Button from "../components/Button";
 import QuestionRenderer from "../components/student/QuestionRenderer";
 import api from "../utils/axios";
 import socket from "../utils/socket";
-
+import config from "../config";
 function QuizLive() {
 	const [cookies] = useCookies(["roomId", "userId"]);
 	const [quizzes, setQuizzes] = useState([]);
@@ -25,7 +25,7 @@ function QuizLive() {
 		async function loadQuiz() {
 			try {
 				const res = await api.get(
-					`http://localhost:3001/api/students/rooms/${cookies.roomId}`,
+					`${config.BACKEND_URL}/api/students/rooms/${cookies.roomId}`,
 				);
 				console.log(res.data);
 
@@ -100,7 +100,7 @@ function QuizLive() {
 			console.log("All formatted answers:", formattedAnswers);
 
 			const res = await api.post(
-				"http://localhost:3001/api/students/rooms/quizzes/answers",
+				`${config.BACKEND_URL}/api/students/rooms/quizzes/answers`,
 				formattedAnswers,
 				{ withCredentials: true },
 			);

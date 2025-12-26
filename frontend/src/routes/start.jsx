@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import RadioGroup from "../components/Radio-group";
 import api from "../utils/axios";
+import config from "../config"
 
 function Start() {
 	const [quiz, setQuiz] = useState([]);
@@ -26,7 +27,7 @@ function Start() {
 				}
 
 				const res = await api.get(
-					`http://localhost:3001/api/students/rooms/${cookie.roomId}`,
+					`${config.BACKEND_URL}/api/students/rooms/${cookie.roomId}`,
 				);
 
 				console.log("Quiz data:", res.data);
@@ -64,7 +65,7 @@ function Start() {
 
 			// Submit to API
 			const res = await api.post(
-				"http://localhost:3001/api/students/rooms/quizzes/answers",
+				`${config.BACKEND_URL}/api/students/rooms/quizzes/answers`,
 				answers,
 				{ withCredentials: true },
 			);

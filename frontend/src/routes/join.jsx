@@ -5,13 +5,13 @@ import Button from "../components/Button";
 import OtpInput from "../components/Otp";
 import TextStroke from "../components/TextStroke";
 import api from "../utils/axios";
-
+import config from "../config";
 function Join() {
 	const [form, setForm] = useState({ username: "", roomId: "" });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const navigation = useNavigate();
-	const [setCookie] = useCookies(["userId", "roomId", "username"]); // Add username
+	const [_cookie,setCookie] = useCookies(["userId", "roomId", "username"]); // Add username
 
 	const onSubmit = async (e) => {
 		e.preventDefault();
@@ -23,7 +23,7 @@ function Join() {
 
 			// Use the api instance instead of hardcoded URL
 			const res = await api.post(
-				`http://localhost:3001/api/students/rooms/${form.roomId}`,
+				`${config.BACKEND_URL}/api/students/rooms/${form.roomId}`,
 				{
 					username: form.username,
 				},

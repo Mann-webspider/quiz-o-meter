@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
-
-const socket = io("http://localhost:3001", {
+import config from "../config";
+const socket = io(`${config.BACKEND_URL}`, {
 	autoConnect: false, // Don't connect automatically
 	reconnection: true,
 	reconnectionDelay: 1000,
