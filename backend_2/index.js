@@ -27,9 +27,10 @@ const io = new Server(server, {
 // Middlewares
 app.use(
 	cors({
-		origin: ["http://localhost:3000"],
-		methods: ["GET", "POST", "PUT", "DELETE"],
+		origin: ['*',`${process.env.CORS_ORIGIN}`,"http://localhost:3000"],
+		methods: ["GET", "POST", "PUT", "DELETE","OPTIONS"],
 		credentials: true,
+		allowedHeaders: ["Content-Type", "Authorization"]
 	}),
 );
 app.use(express.json());
