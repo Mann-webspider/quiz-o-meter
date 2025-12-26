@@ -75,7 +75,8 @@ router.post("/rooms", async (req, res) => {
 		const cookieOptions = {
 			maxAge: 24 * 60 * 60 * 1000, // 24 hours
 			httpOnly: false, // Allow JavaScript access
-			sameSite: "lax",
+			sameSite: "none",
+			secure: true,
 			path: "/",
 		};
 

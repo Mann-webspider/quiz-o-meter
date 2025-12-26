@@ -35,7 +35,8 @@ function Join() {
 			const cookieOptions = {
 				path: "/",
 				maxAge: 24 * 60 * 60, // 24 hours in seconds
-				sameSite: "lax",
+				sameSite: "none",
+				secure: true
 			};
 
 			setCookie("userId", res.data.userId, cookieOptions);

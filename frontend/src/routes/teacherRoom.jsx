@@ -33,7 +33,8 @@ function CreateRoom() {
 			const cookieOptions = {
 				path: "/",
 				maxAge: 24 * 60 * 60, // 24 hours in seconds
-				sameSite: "lax",
+				sameSite: "none",
+				secure: true
 			};
 			console.log(res.data);
 			
